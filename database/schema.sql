@@ -126,3 +126,25 @@ create policy "read own bookings" on bookings
 grant select on public.hotels, public.rooms, public.hotel_scores, public.hotel_overall to anon, authenticated;
 grant select on public.users, public.bookings to authenticated;
 
+-- The instructions: copy the new account into our users table
+create function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  insert into public.users (user_id, full_name, email, phone)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data ->> 'full_name', ''),
+    new.email,
+    new.raw_user_meta_data ->> 'phone'
+  );
+  return new;
+end;
+$$;
+
+-- The rule: run the instructions after every new login account
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
