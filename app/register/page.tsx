@@ -48,7 +48,7 @@ export default function RegisterPage() {
                                         <option value="+673">Brunei (+673)</option>
                                         <option value="+66">Thailand (+66)</option>
                                     </select>
-                                    <Input id="phone_number" name="phone_number" type="tel" inputMode="numeric" placeholder="12-345 6789" pattern="[0-9\- ]{7,14}" title="Digits only, without the country code (for example 12-345 6789)." required />
+                                    <Input id="phone_number" name="phone_number" type="tel" inputMode="numeric" placeholder="12-3456789" pattern="[0-9\- ]{7,14}" title="Digits only, without the country code (for example 12-3456789)." required />
                                 </div>
                             </div>
                             <div className="flex flex-col gap-2">
