@@ -56,21 +56,21 @@ async function ManageRooms() {
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b">
-              <th className="py-2">Room</th>
-              <th className="py-2">Type</th>
-              <th className="py-2">Price per night (RM)</th>
-              <th className="py-2">Status</th>
+              <th className="py-2 pr-6">Room</th>
+              <th className="py-2 pr-6">Type</th>
+              <th className="py-2 pr-6">Price per night (RM)</th>
+              <th className="py-2 pr-6">Status</th>
             </tr>
           </thead>
           <tbody>
             {rooms.map((room) => (
               <tr key={room.room_id} className="border-b">
-                <td className="py-2">{room.room_name}</td>
-                <td className="py-2">{room.room_type}</td>
-                <td className="py-2">
+                <td className="py-2 pr-6">{room.room_name}</td>
+                <td className="py-2 pr-6">{room.room_type}</td>
+                <td className="py-2 pr-6">
                   {Number(room.price_per_night).toFixed(2)}
                 </td>
-                <td className="py-2">{room.availability_status}</td>
+                <td className="py-2 pr-6">{room.availability_status}</td>
               </tr>
             ))}
           </tbody>

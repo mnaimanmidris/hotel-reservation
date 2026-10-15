@@ -28,7 +28,8 @@ create table rooms (
     room_type text not null,
     price_per_night numeric(10,2) not null check (price_per_night > 0),
     availability_status text not null default 'available'
-        check (availability_status in ('available', 'unavailable'))
+      check (availability_status in ('available', 'unavailable')),
+    constraint rooms_hotel_room_unique unique (hotel_id, room_name)
 );
 
 --4. BOOKINGS Table
