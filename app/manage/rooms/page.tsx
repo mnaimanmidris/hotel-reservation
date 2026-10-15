@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
@@ -53,7 +54,7 @@ async function ManageRooms() {
   return (
     <div>
       <h2 className="mb-4 text-xl">{hotel.hotel_name}</h2>
-        <AddRoomForm />
+      <AddRoomForm />
       {rooms && rooms.length > 0 ? (
         <table className="w-full text-left text-sm">
           <thead>
@@ -62,6 +63,7 @@ async function ManageRooms() {
               <th className="py-2 pr-6">Type</th>
               <th className="py-2 pr-6">Price per night (RM)</th>
               <th className="py-2 pr-6">Status</th>
+              <th className="py-2 pr-6"></th>
             </tr>
           </thead>
           <tbody>
@@ -72,7 +74,15 @@ async function ManageRooms() {
                 <td className="py-2 pr-6">
                   {Number(room.price_per_night).toFixed(2)}
                 </td>
-                <td className="py-2 pr-6">{room.availability_status}</td>
+                <td className="py-2 pr-6 capitalize">{room.availability_status}</td>
+                <td className="py-2 pr-6">
+                  <Link
+                    href={`/manage/rooms/${room.room_id}`}
+                    className="underline"
+                  >
+                    Edit
+                  </Link>
+                </td>
               </tr>
             ))}
           </tbody>
