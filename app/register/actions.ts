@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 const COUNTRY_CODES = ["+60", "+65", "+62", "+673", "+66"];
 
@@ -46,5 +47,6 @@ export async function register(
   if (error) {
     return { error: error.message };
   }
-  return { success: true };
+  
+  redirect("/register/check-email");
 }
