@@ -121,3 +121,39 @@ export async function updateRoom(
   revalidatePath("/rooms");
   redirect("/manage/rooms");
 }
+
+export async function deleteRoom(
+  _prevState: RoomFormState,
+  formData: FormData
+): Promise<RoomFormState> {
+  const roomId = String(formData.get("room_id") ?? "");
+
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  if (!auth?.claims?.sub) {
+    return { error: "Please log in again." };
+  }
+
+  const { data, error } = await supabase
+    .from("rooms")
+    .delete()
+    .eq("room_id", roomId)
+    .select("room_id");
+
+  if (error) {
+    if (error.code === "23503") {
+      return {
+        error:
+          "This room has bookings, so it cannot be deleted. Set it to Unavailable instead.",
+      };
+    }
+    return { error: error.message };
+  }
+  if (!data || data.length === 0) {
+    return { error: "Room not found, or you do not manage this hotel." };
+  }
+
+  revalidatePath("/manage/rooms");
+  revalidatePath("/rooms");
+  return { success: true };
+}

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { AddRoomForm } from "./add-room-form";
+import { DeleteRoomButton } from "./delete-room-button";
 
 async function ManageRooms() {
   await connection();
@@ -64,6 +65,7 @@ async function ManageRooms() {
               <th className="py-2 pr-6">Price per night (RM)</th>
               <th className="py-2 pr-6">Status</th>
               <th className="py-2 pr-6"></th>
+              <th className="py-2 pr-6"></th>
             </tr>
           </thead>
           <tbody>
@@ -76,12 +78,12 @@ async function ManageRooms() {
                 </td>
                 <td className="py-2 pr-6 capitalize">{room.availability_status}</td>
                 <td className="py-2 pr-6">
-                  <Link
-                    href={`/manage/rooms/${room.room_id}`}
-                    className="underline"
-                  >
+                  <Link href={`/manage/rooms/${room.room_id}`} className="underline">
                     Edit
                   </Link>
+                </td>
+                <td className="py-2 pr-6">
+                  <DeleteRoomButton roomId={room.room_id} roomName={room.room_name} />
                 </td>
               </tr>
             ))}
