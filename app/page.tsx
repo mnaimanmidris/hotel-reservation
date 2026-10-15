@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { AuthStatus } from "@/components/auth-status";
 
@@ -8,6 +9,9 @@ export default function Home() {
         <AuthStatus />
       </Suspense>
       <h1 className="text-2xl font-semibold">Hotel Reservation System</h1>
+      <Link href="/rooms" className="underline">
+        View rooms
+      </Link>
     </main>
   );
 }
