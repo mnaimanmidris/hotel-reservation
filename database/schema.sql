@@ -148,3 +148,43 @@ $$;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- ROOM WRITE RULES: only the manager or admin of a hotel can change own rooms
+grant insert, update, delete on public.rooms to authenticated;
+
+create policy "manager or admin add rooms to own hotel" on rooms
+  for insert to authenticated
+  with check (
+    exists (
+      select 1 from hotels h
+      where h.hotel_id = rooms.hotel_id
+        and h.user_id = (select auth.uid())
+    )
+  );
+
+create policy "manager or admin edits room of own hotel" on rooms
+  for update to authenticated
+  using (
+    exists (
+      select 1 from hotels h
+      where h.hotel_id = rooms.hotel_id
+        and h.user_id = (select auth.uid())
+    )
+  )
+  with check (
+    exists (
+      select 1 from hotels h
+      where h.hotel_id = rooms.hotel_id
+        and h.user_id = (select auth.uid())
+    )
+  );
+
+create policy "manager or admin delete rooms of own hotel" on rooms
+  for delete to authenticated
+  using (
+    exists (
+      select 1 from hotels h
+      where h.hotel_id = rooms.hotel_id
+        and h.user_id = (select auth.uid())
+    )
+  );
