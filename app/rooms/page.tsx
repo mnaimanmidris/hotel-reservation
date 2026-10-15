@@ -8,9 +8,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+type Room = {
+  room_id: string;
+  room_name: string;
+  room_type: string;
+  price_per_night: number;
+  availability_status: string;
+  hotels: { hotel_name: string } | null;
+};
+
 async function RoomList() {
   const supabase = await createClient();
-  const { data: rooms, error } = await supabase
+  const { data, error } = await supabase
     .from("rooms")
     .select(
       "room_id, room_name, room_type, price_per_night, availability_status, hotels(hotel_name)"
@@ -20,6 +29,9 @@ async function RoomList() {
   if (error) {
     return <p>Could not load rooms: {error.message}</p>;
   }
+
+  const rooms = data as unknown as Room[] | null;
+
   if (!rooms || rooms.length === 0) {
     return <p>No rooms available yet.</p>;
   }
