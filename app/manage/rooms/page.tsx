@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { AddRoomForm } from "./add-room-form";
 
 async function ManageRooms() {
   await connection();
@@ -52,6 +53,7 @@ async function ManageRooms() {
   return (
     <div>
       <h2 className="mb-4 text-xl">{hotel.hotel_name}</h2>
+        <AddRoomForm />
       {rooms && rooms.length > 0 ? (
         <table className="w-full text-left text-sm">
           <thead>
