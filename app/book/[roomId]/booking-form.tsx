@@ -75,7 +75,7 @@ export function BookingForm({
           <p className="font-semibold">
             Total: RM {state.summary.total.toFixed(2)}
           </p>
-          <p>Payment is the next step.</p>
+          <p>Your booking is saved as pending. Payment is the next step.</p>
         </div>
       )}
 
