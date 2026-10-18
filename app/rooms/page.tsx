@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { connection } from "next/server";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -18,6 +20,7 @@ type Room = {
 };
 
 async function RoomList() {
+  await connection();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("rooms")
@@ -56,6 +59,11 @@ async function RoomList() {
                 ? "Available"
                 : "Unavailable"}
             </p>
+            {room.availability_status === "available" && (
+              <Link href={`/book/${room.room_id}`} className="mt-2 inline-block underline">
+                Book this room
+              </Link>
+            )}
           </CardContent>
         </Card>
       ))}
