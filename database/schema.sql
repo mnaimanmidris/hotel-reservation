@@ -13,7 +13,7 @@ create table users (
 create table hotels (
     hotel_id uuid primary key default gen_random_uuid(),
     user_id uuid references users(user_id),
-    hotel_name text not null unique,
+    hotel_name text not null,
     description text,
     address text,
     contact_email text,

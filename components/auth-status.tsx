@@ -10,8 +10,9 @@ export async function AuthStatus() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const email = data?.claims?.email;
+  const userId = data?.claims?.sub;
 
-  if (!email) {
+  if (!email || !userId) {
     return (
       <div className="flex gap-4 text-sm">
         <Link href="/login" className="underline">Log in</Link>
@@ -20,10 +21,22 @@ export async function AuthStatus() {
     );
   }
 
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const isManager = profile?.role === "hotel_management";
+
   return (
-    <form action={logout} className="flex items-center gap-2">
-      <span className="text-sm">{email}</span>
-      <Button type="submit" variant="outline">Log out</Button>
-    </form>
+    <div className="flex flex-wrap items-center gap-4 text-sm">
+      <Link href={isManager ? "/manage/rooms" : "/dashboard"} className="underline">
+        {isManager ? "Manage rooms" : "My bookings"}
+      </Link>
+      <span>{email}</span>
+      <form action={logout}>
+        <Button type="submit" variant="outline">Log out</Button>
+      </form>
+    </div>
   );
 }

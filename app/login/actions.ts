@@ -17,15 +17,25 @@ export async function login(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-  if (error) {
+  const { data: signedIn, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error || !signedIn.user) {
     return {
       error: "Incorrect email or password, or your email is not confirmed yet.",
     };
   }
 
-  redirect("/");
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("user_id", signedIn.user.id)
+    .maybeSingle();
+
+  redirect(profile?.role === "hotel_management" ? "/manage/rooms" : "/dashboard");
   
 }
 

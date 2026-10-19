@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { AddRoomForm } from "./add-room-form";
@@ -24,7 +24,7 @@ async function ManageRooms() {
     .maybeSingle();
 
   if (profile?.role !== "hotel_management") {
-    return <p>This page is only for hotel management accounts.</p>;
+    notFound();
   }
 
   const { data: hotel } = await supabase
