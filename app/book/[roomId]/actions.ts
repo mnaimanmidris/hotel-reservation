@@ -125,7 +125,12 @@ export async function startBooking(
     return { error: "Could not save the booking. Please try again." };
   }
 
-  const siteUrl = process.env.SITE_URL!;
+  const siteUrl = (process.env.SITE_URL ?? "").trim().replace(/\/+$/, "");
+  if (!siteUrl.startsWith("http")) {
+    console.error("SITE_URL is missing or invalid:", JSON.stringify(process.env.SITE_URL));
+    await admin.from("bookings").delete().eq("booking_id", booking.booking_id);
+    return { error: "Could not start the payment. Please try again." };
+  }
   let checkoutUrl: string | null = null;
 
   try {
