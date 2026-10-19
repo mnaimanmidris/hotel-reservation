@@ -189,3 +189,7 @@ create policy "manager or admin delete rooms of own hotel" on rooms
         and h.user_id = (select auth.uid())
     )
   );
+
+  -- SERVER ROLE: the tables the server (secret key) may use
+grant select, insert, update, delete on public.bookings, public.payments to service_role;
+grant select on public.rooms, public.hotels to service_role;

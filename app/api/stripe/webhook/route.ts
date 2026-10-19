@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendBookingConfirmation } from "@/lib/email";
 
 function check(error: { message: string } | null, what: string) {
   if (error) {
@@ -84,6 +85,12 @@ async function confirmBooking(session: Stripe.Checkout.Session) {
     .update({ booking_status: "confirmed" })
     .eq("booking_id", bookingId);
   check(confirmError, "confirm booking");
+  
+  try {
+    await sendBookingConfirmation(bookingId, amount);
+  } catch (err) {
+    console.error("Confirmation email failed:", err);
+  }
 }
 
 export async function POST(request: Request) {
