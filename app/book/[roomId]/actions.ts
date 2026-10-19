@@ -151,10 +151,10 @@ export async function startBooking(
       cancel_url: `${siteUrl}/book/${roomId}`,
     });
     checkoutUrl = session.url;
-  } catch {
+  } catch (err) {
+    console.error("Stripe checkout failed:", err);
     checkoutUrl = null;
   }
-
   if (!checkoutUrl) {
     await admin.from("bookings").delete().eq("booking_id", booking.booking_id);
     return { error: "Could not start the payment. Please try again." };
