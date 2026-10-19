@@ -52,7 +52,7 @@ create table bookings (
 --5. PAYMENTS Table
 create table payments (
     payment_id uuid primary key default gen_random_uuid(),
-    booking_id uuid not null references bookings(booking_id),
+    booking_id uuid not null unique references bookings(booking_id),
     stripe_payment_id text unique,
     amount numeric(10,2) not null,
     payment_status text not null
@@ -76,8 +76,8 @@ create table cancellations (
 create table reviews (
     review_id uuid primary key default gen_random_uuid(),
     booking_id uuid not null unique references bookings(booking_id),
-    user_id uuid not null unique references users(user_id),
-    rating integer not null unique
+    user_id uuid not null references users(user_id),
+    rating integer not null
         check (rating between 1 and 5),
     review_text text,
     created_at timestamptz not null default now()
