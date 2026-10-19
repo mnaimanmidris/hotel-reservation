@@ -1,23 +1,14 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { stripe } from "@/lib/stripe";
 
-type BookingState =
-  | { error: string }
-  | {
-      bookingId: string;
-      summary: {
-        nights: number;
-        total: number;
-        checkIn: string;
-        checkOut: string;
-      };
-    }
-  | null;
+type BookingState = { error: string } | null;
 
 const DAY = 24 * 60 * 60 * 1000;
-const HOLD_MINUTES = 30;
+const HOLD_MINUTES = 35;
 
 export async function startBooking(
   _prevState: BookingState,
@@ -68,7 +59,7 @@ export async function startBooking(
   const supabase = await createClient();
   const { data: room } = await supabase
     .from("rooms")
-    .select("price_per_night, availability_status")
+    .select("room_name, price_per_night, availability_status")
     .eq("room_id", roomId)
     .maybeSingle();
 
@@ -79,25 +70,38 @@ export async function startBooking(
   const { data: auth } = await supabase.auth.getClaims();
   const userId = auth?.claims?.sub ?? null;
 
-  // Is the room already taken for these dates?
-  // Confirmed bookings always block. Pending ones block for 30 minutes.
   const admin = createAdminClient();
   const cutoff = new Date(Date.now() - HOLD_MINUTES * 60 * 1000).toISOString();
-  const { data: clashes, error: clashError } = await admin
+
+  // Confirmed bookings always block the dates
+  const { data: confirmedClash, error: confirmedError } = await admin
     .from("bookings")
     .select("booking_id")
     .eq("room_id", roomId)
+    .eq("booking_status", "confirmed")
     .lt("check_in", checkOut)
     .gt("check_out", checkIn)
-    .or(
-      `booking_status.eq.confirmed,and(booking_status.eq.pending,created_at.gte.${cutoff})`
-    )
     .limit(1);
 
-  if (clashError) {
-    return { error: `Could not check availability: ${clashError.message}` };
+  // Pending bookings block only for 35 minutes, and not for the same person
+  const { data: pendingClash, error: pendingError } = await admin
+    .from("bookings")
+    .select("booking_id")
+    .eq("room_id", roomId)
+    .eq("booking_status", "pending")
+    .gte("created_at", cutoff)
+    .neq("guest_email", guestEmail)
+    .lt("check_in", checkOut)
+    .gt("check_out", checkIn)
+    .limit(1);
+
+  if (confirmedError || pendingError) {
+    return { error: "Could not check availability. Please try again." };
   }
-  if (clashes && clashes.length > 0) {
+  if (
+    (confirmedClash && confirmedClash.length > 0) ||
+    (pendingClash && pendingClash.length > 0)
+  ) {
     return { error: "Sorry, this room is already booked for those dates." };
   }
 
@@ -121,13 +125,40 @@ export async function startBooking(
     return { error: "Could not save the booking. Please try again." };
   }
 
-  return {
-    bookingId: booking.booking_id,
-    summary: {
-      nights,
-      total: nights * Number(room.price_per_night),
-      checkIn,
-      checkOut,
-    },
-  };
+  const siteUrl = process.env.SITE_URL!;
+  let checkoutUrl: string | null = null;
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: "myr",
+            unit_amount: Math.round(nights * Number(room.price_per_night) * 100),
+            product_data: {
+              name: `${room.room_name}: ${checkIn} to ${checkOut} (${nights} night${nights > 1 ? "s" : ""})`,
+            },
+          },
+        },
+      ],
+      customer_email: guestEmail,
+      client_reference_id: booking.booking_id,
+      metadata: { booking_id: booking.booking_id },
+      expires_at: Math.floor(Date.now() / 1000) + 31 * 60,
+      success_url: `${siteUrl}/book/success?booking_id=${booking.booking_id}`,
+      cancel_url: `${siteUrl}/book/${roomId}`,
+    });
+    checkoutUrl = session.url;
+  } catch {
+    checkoutUrl = null;
+  }
+
+  if (!checkoutUrl) {
+    await admin.from("bookings").delete().eq("booking_id", booking.booking_id);
+    return { error: "Could not start the payment. Please try again." };
+  }
+
+  redirect(checkoutUrl);
 }

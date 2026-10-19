@@ -54,33 +54,17 @@ export function BookingForm({
           name="guest_phone"
           type="tel"
           placeholder="+60123456789"
-          pattern="\+[0-9]{8,18}"
+          pattern="\+[0-9]{8,15}"
           title="Start with the country code, for example +60123456789"
           defaultValue={defaults.phone}
           required
         />
       </div>
-      
 
-      {state && "error" in state && (
-        <p className="text-sm text-red-600">{state.error}</p>
-      )}
-
-      {state && "summary" in state && (
-        <div className="rounded-md border p-4 text-sm">
-          <p>
-            {state.summary.nights} night(s): {state.summary.checkIn} to{" "}
-            {state.summary.checkOut}
-          </p>
-          <p className="font-semibold">
-            Total: RM {state.summary.total.toFixed(2)}
-          </p>
-          <p>Your booking is saved as pending. Payment is the next step.</p>
-        </div>
-      )}
+      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
 
       <Button type="submit" disabled={pending}>
-        {pending ? "Checking..." : "Continue"}
+        {pending ? "Redirecting to payment..." : "Continue to payment"}
       </Button>
     </form>
   );
