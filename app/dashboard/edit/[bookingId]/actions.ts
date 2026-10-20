@@ -5,6 +5,10 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendBookingConfirmation } from "@/lib/email";
+import {
+  FREE_CHANGE_DEADLINE_DAYS,
+  withinFreeChangeWindow,
+} from "@/lib/booking-rules";
 
 type EditState = { error: string } | null;
 
@@ -62,8 +66,22 @@ export async function updateBookingDates(
   if (!booking || booking.booking_status !== "confirmed") {
     return { error: "Booking not found." };
   }
-  if (booking.check_in <= today) {
-    return { error: "This booking can no longer be changed." };
+
+  if (!withinFreeChangeWindow(booking.check_in, today)) {
+    return {
+      error: `Dates can only be changed up to ${FREE_CHANGE_DEADLINE_DAYS} days before check-in.`,
+    };
+  }
+
+  const { data: existingCancellation } = await admin
+    .from("cancellations")
+    .select("cancellation_id")
+    .eq("booking_id", bookingId)
+    .maybeSingle();
+  if (existingCancellation) {
+    return {
+      error: "This booking has a cancellation request and cannot be changed.",
+    };
   }
 
   const oldNights = nightsBetween(booking.check_in, booking.check_out);

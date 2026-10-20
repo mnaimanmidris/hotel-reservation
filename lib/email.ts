@@ -77,3 +77,59 @@ export async function sendBookingConfirmation(
     throw new Error(`send email: ${sendError.message}`);
   }
 }
+
+export async function sendCancellationEmail(
+  bookingId: string,
+  refundAmount: number,
+  kind: "refunded" | "requested"
+) {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("bookings")
+    .select(
+      "booking_id, guest_name, guest_email, check_in, check_out, price_at_booking, rooms(room_name, hotels(hotel_name))"
+    )
+    .eq("booking_id", bookingId)
+    .single();
+
+  if (error || !data) {
+    throw new Error(`read booking for email: ${error?.message ?? "not found"}`);
+  }
+
+  const booking = data as unknown as BookingRow;
+  const hotelName = escapeHtml(booking.rooms?.hotels?.hotel_name ?? "");
+  const roomName = escapeHtml(booking.rooms?.room_name ?? "");
+  const guestName = escapeHtml(booking.guest_name);
+
+  const title =
+    kind === "refunded"
+      ? "Your booking has been cancelled"
+      : "We received your cancellation request";
+  const message =
+    kind === "refunded"
+      ? `Your booking was cancelled and a refund of RM ${refundAmount.toFixed(2)} has been issued to your card. It may take several business days to appear.`
+      : `The hotel will review your request. If it is approved, a refund of RM ${refundAmount.toFixed(2)} will be issued to your card automatically, and we will let you know.`;
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const { error: sendError } = await resend.emails.send({
+    from: "Hotel Reservation <onboarding@resend.dev>",
+    to: [booking.guest_email],
+    subject: `${kind === "refunded" ? "Booking cancelled" : "Cancellation request received"}: ${booking.rooms?.hotels?.hotel_name ?? "your stay"}`,
+    html: `
+      <h2>${title}</h2>
+      <p>Dear ${guestName},</p>
+      <p>${message}</p>
+      <table cellpadding="6">
+        <tr><td>Hotel</td><td>${hotelName}</td></tr>
+        <tr><td>Room</td><td>${roomName}</td></tr>
+        <tr><td>Check-in</td><td>${booking.check_in}</td></tr>
+        <tr><td>Check-out</td><td>${booking.check_out}</td></tr>
+        <tr><td>Booking reference</td><td>${booking.booking_id}</td></tr>
+      </table>
+    `,
+  });
+
+  if (sendError) {
+    throw new Error(`send email: ${sendError.message}`);
+  }
+}
