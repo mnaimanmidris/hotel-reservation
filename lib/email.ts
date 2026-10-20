@@ -22,7 +22,8 @@ function escapeHtml(text: string) {
 
 export async function sendBookingConfirmation(
   bookingId: string,
-  amount: number
+  amount: number,
+  kind: "confirmed" | "updated" = "confirmed"
 ) {
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -54,9 +55,9 @@ export async function sendBookingConfirmation(
   const { error: sendError } = await resend.emails.send({
     from: "Hotel Reservation <onboarding@resend.dev>",
     to: [booking.guest_email],
-    subject: `Booking confirmed: ${booking.rooms?.hotels?.hotel_name ?? "your stay"}`,
+    subject: `${kind === "updated" ? "Booking updated" : "Booking confirmed"}: ${booking.rooms?.hotels?.hotel_name ?? "your stay"}`,
     html: `
-      <h2>Your booking is confirmed</h2>
+      <h2>${kind === "updated" ? "Your booking dates have been changed" : "Your booking is confirmed"}</h2>
       <p>Dear ${guestName},</p>
       <p>Thank you for your booking. Here are the details:</p>
       <table cellpadding="6">

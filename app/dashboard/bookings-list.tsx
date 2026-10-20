@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
 type BookingRow = {
@@ -20,9 +21,13 @@ function nightsBetween(checkIn: string, checkOut: string) {
 function BookingTable({
   title,
   bookings,
+  today,
+  editable = false,
 }: {
   title: string;
   bookings: BookingRow[];
+  today: string;
+  editable?: boolean;
 }) {
   return (
     <section className="mb-8">
@@ -40,6 +45,7 @@ function BookingTable({
               <th className="py-2 pr-6">Nights</th>
               <th className="py-2 pr-6">Total (RM)</th>
               <th className="py-2 pr-6">Status</th>
+              {editable && <th className="py-2 pr-6"></th>}
             </tr>
           </thead>
           <tbody>
@@ -56,6 +62,18 @@ function BookingTable({
                     {(nights * Number(b.price_at_booking)).toFixed(2)}
                   </td>
                   <td className="py-2 pr-6 capitalize">{b.booking_status}</td>
+                  {editable && (
+                    <td className="py-2 pr-6">
+                      {b.check_in > today ? (
+                        <Link
+                          href={`/dashboard/edit/${b.booking_id}`}
+                          className="underline"
+                        >
+                          Change dates
+                        </Link>
+                      ) : null}
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -95,8 +113,17 @@ export async function BookingsList({ userId }: { userId: string }) {
 
   return (
     <div>
-      <BookingTable title="Upcoming bookings" bookings={upcoming} />
-      <BookingTable title="Past and cancelled bookings" bookings={past} />
+      <BookingTable
+        title="Upcoming bookings"
+        bookings={upcoming}
+        today={today}
+        editable
+      />
+      <BookingTable
+        title="Past and cancelled bookings"
+        bookings={past}
+        today={today}
+      />
     </div>
   );
 }
