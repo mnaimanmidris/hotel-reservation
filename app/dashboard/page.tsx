@@ -22,7 +22,7 @@ async function DashboardContent() {
     .maybeSingle();
 
   if (profile?.role === "hotel_management") {
-    redirect("/manage/rooms");
+    redirect("/manage");
   }
 
   return (

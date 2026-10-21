@@ -206,3 +206,20 @@ create policy "read own cancellations" on cancellations
         and b.user_id = (select auth.uid())
     )
   );
+
+  -- SERVER ROLE: the tables the server (secret key) may use
+grant select, insert, update, delete on public.bookings, public.payments, public.cancellations to service_role;
+grant select on public.rooms, public.hotels to service_role;
+
+-- CUSTOMERS: read-only access to their own rows (rows are limited by policies)
+grant select on public.users, public.bookings, public.cancellations to authenticated;
+
+create policy "read own cancellations" on cancellations
+  for select to authenticated
+  using (
+    exists (
+      select 1 from bookings b
+      where b.booking_id = cancellations.booking_id
+        and b.user_id = (select auth.uid())
+    )
+  );

@@ -99,6 +99,9 @@ async function ManageRooms() {
 export default function ManageRoomsPage() {
   return (
     <main className="mx-auto max-w-5xl p-8">
+      <Link href="/manage" className="text-sm underline">
+        Back to dashboard
+      </Link>
       <h1 className="mb-6 text-2xl font-semibold">Manage Room Listings</h1>
       <Suspense fallback={<p>Loading...</p>}>
         <ManageRooms />

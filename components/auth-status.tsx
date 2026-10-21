@@ -30,8 +30,8 @@ export async function AuthStatus() {
 
   return (
     <div className="flex flex-wrap items-center gap-4 text-sm">
-      <Link href={isManager ? "/manage/rooms" : "/dashboard"} className="underline">
-        {isManager ? "Manage rooms" : "My bookings"}
+      <Link href={isManager ? "/manage" : "/dashboard"} className="underline">
+        {isManager ? "Management dashboard" : "My bookings"}
       </Link>
       <span>{email}</span>
       <form action={logout}>

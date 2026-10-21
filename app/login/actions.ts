@@ -35,7 +35,7 @@ export async function login(
     .eq("user_id", signedIn.user.id)
     .maybeSingle();
 
-  redirect(profile?.role === "hotel_management" ? "/manage/rooms" : "/dashboard");
+  redirect(profile?.role === "hotel_management" ? "/manage" : "/dashboard");
   
 }
 
