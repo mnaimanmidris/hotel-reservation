@@ -102,6 +102,9 @@ async function DashboardContent() {
         <Link href="/manage/bookings" className="underline">
           Manage bookings
         </Link>
+        <Link href="/manage/reports" className="underline">
+          Reports
+        </Link>
       </nav>
     </div>
   );
