@@ -188,7 +188,12 @@ async function ManageBookings({
                         (cancellationOf(b)?.approval_status === "pending" ? (
                           <RequestActions bookingId={b.booking_id} />
                         ) : b.check_in >= today ? (
-                          <HotelCancelButton bookingId={b.booking_id} />
+                          <div className="flex flex-col items-start gap-2">
+                            <Link href={`/manage/bookings/edit/${b.booking_id}`} className="underline">
+                              Change dates
+                            </Link>
+                            <HotelCancelButton bookingId={b.booking_id} />
+                          </div>
                         ) : null)}
                     </td>
                   </tr>
