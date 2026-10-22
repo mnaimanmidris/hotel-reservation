@@ -107,3 +107,49 @@ export async function rejectCancellation(
   revalidatePath("/manage");
   return { message: "Request rejected. The booking stays confirmed." };
 }
+
+export async function cancelBookingByHotel(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const bookingId = String(formData.get("booking_id") ?? "");
+
+  const manager = await getManagerContext();
+  if (!manager) {
+    return { error: "Please log in again." };
+  }
+
+  const admin = createAdminClient();
+  const { data: booking } = await admin
+    .from("bookings")
+    .select("booking_id, check_in, rooms!inner(hotel_id)")
+    .eq("booking_id", bookingId)
+    .eq("rooms.hotel_id", manager.hotelId)
+    .eq("booking_status", "confirmed")
+    .maybeSingle();
+  if (!booking) {
+    return { error: "Booking not found." };
+  }
+
+  const today = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Kuala_Lumpur",
+  });
+  if (booking.check_in < today) {
+    return { error: "A stay that has already started cannot be cancelled." };
+  }
+
+  const result = await cancelAndRefund(bookingId);
+  if (!result.ok) {
+    return { error: result.error };
+  }
+
+  try {
+    await sendCancellationEmail(bookingId, result.amount, "refunded");
+  } catch (err) {
+    console.error("Cancellation email failed:", err);
+  }
+
+  revalidatePath("/manage/bookings");
+  revalidatePath("/manage");
+  return { message: `Cancelled. RM ${result.amount.toFixed(2)} refunded.` };
+}
