@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+  import { RequestActions } from "./request-actions";
 
 type Cancellation = { approval_status: string; refund_status: string };
 
@@ -155,6 +156,7 @@ async function ManageBookings({
                 <th className="py-2 pr-6">Total (RM)</th>
                 <th className="py-2 pr-6">Booked as</th>
                 <th className="py-2 pr-6">Status</th>
+                <th className="py-2 pr-6"></th>
               </tr>
             </thead>
             <tbody>
@@ -179,6 +181,12 @@ async function ManageBookings({
                     </td>
                     <td className="py-2 pr-6 capitalize">
                       {statusText(b, cancellationOf(b))}
+                    </td>
+                    <td className="py-2 pr-6">
+                      {b.booking_status === "confirmed" &&
+                        cancellationOf(b)?.approval_status === "pending" && (
+                          <RequestActions bookingId={b.booking_id} />
+                      )}
                     </td>
                   </tr>
                 );

@@ -81,7 +81,7 @@ export async function sendBookingConfirmation(
 export async function sendCancellationEmail(
   bookingId: string,
   refundAmount: number,
-  kind: "refunded" | "requested"
+  kind: "refunded" | "requested" | "rejected"
 ) {
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -100,25 +100,34 @@ export async function sendCancellationEmail(
   const hotelName = escapeHtml(booking.rooms?.hotels?.hotel_name ?? "");
   const roomName = escapeHtml(booking.rooms?.room_name ?? "");
   const guestName = escapeHtml(booking.guest_name);
+  const hotelLabel = booking.rooms?.hotels?.hotel_name ?? "your stay";
 
-  const title =
-    kind === "refunded"
-      ? "Your booking has been cancelled"
-      : "We received your cancellation request";
-  const message =
-    kind === "refunded"
-      ? `Your booking was cancelled and a refund of RM ${refundAmount.toFixed(2)} has been issued to your card. It may take several business days to appear.`
-      : `The hotel will review your request. If it is approved, a refund of RM ${refundAmount.toFixed(2)} will be issued to your card automatically, and we will let you know.`;
+  const titles = {
+    refunded: "Your booking has been cancelled",
+    requested: "We received your cancellation request",
+    rejected: "Your cancellation request was not approved",
+  };
+  const messages = {
+    refunded: `Your booking was cancelled and a refund of RM ${refundAmount.toFixed(2)} has been issued to your card. It may take several business days to appear.`,
+    requested: `The hotel will review your request. If it is approved, a refund of RM ${refundAmount.toFixed(2)} will be issued to your card automatically, and we will let you know.`,
+    rejected:
+      "The hotel was unable to approve your cancellation request, so your booking remains confirmed. Please contact the hotel if you have any questions.",
+  };
+  const subjects = {
+    refunded: "Booking cancelled",
+    requested: "Cancellation request received",
+    rejected: "Cancellation request not approved",
+  };
 
   const resend = new Resend(process.env.RESEND_API_KEY);
   const { error: sendError } = await resend.emails.send({
     from: "Hotel Reservation <onboarding@resend.dev>",
     to: [booking.guest_email],
-    subject: `${kind === "refunded" ? "Booking cancelled" : "Cancellation request received"}: ${booking.rooms?.hotels?.hotel_name ?? "your stay"}`,
+    subject: `${subjects[kind]}: ${hotelLabel}`,
     html: `
-      <h2>${title}</h2>
+      <h2>${titles[kind]}</h2>
       <p>Dear ${guestName},</p>
-      <p>${message}</p>
+      <p>${messages[kind]}</p>
       <table cellpadding="6">
         <tr><td>Hotel</td><td>${hotelName}</td></tr>
         <tr><td>Room</td><td>${roomName}</td></tr>
