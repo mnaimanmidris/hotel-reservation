@@ -126,7 +126,7 @@ export async function updateBookingDatesByHotel(
   if (updateError) {
     return { error: "Could not save the new dates. Please try again." };
   }
-    await admin
+  await admin
     .from("cancellations")
     .delete()
     .eq("booking_id", bookingId)
