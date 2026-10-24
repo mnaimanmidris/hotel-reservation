@@ -223,3 +223,27 @@ create policy "read own cancellations" on cancellations
         and b.user_id = (select auth.uid())
     )
   );
+
+  grant select, insert on public.reviews to authenticated;
+
+create policy "Customers read own reviews"
+on public.reviews
+for select
+to authenticated
+using (user_id = auth.uid());
+
+create policy "Customers review own completed bookings"
+on public.reviews
+for insert
+to authenticated
+with check (
+  user_id = auth.uid()
+  and exists (
+    select 1
+    from public.bookings b
+    where b.booking_id = reviews.booking_id
+      and b.user_id = auth.uid()
+      and b.booking_status = 'confirmed'
+      and b.check_out < (now() at time zone 'Asia/Kuala_Lumpur')::date
+  )
+);
