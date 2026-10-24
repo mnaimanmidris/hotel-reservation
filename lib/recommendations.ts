@@ -46,3 +46,25 @@ export async function getRecommendations(
     source: "popular" as const,
   }));
 }
+
+type ReviewWithHotel = {
+  rating: number;
+  created_at: string;
+  bookings: { rooms: { hotels: { hotel_name: string } | null } | null } | null;
+};
+
+// Starting hotel = the hotel the customer rated highest (newest review wins ties)
+export async function getStartingHotel(userId: string): Promise<string | null> {
+  await connection();
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("reviews")
+    .select("rating, created_at, bookings(rooms(hotels(hotel_name)))")
+    .eq("user_id", userId)
+    .order("rating", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  const review = (data as unknown as ReviewWithHotel[] | null)?.[0];
+  return review?.bookings?.rooms?.hotels?.hotel_name ?? null;
+}

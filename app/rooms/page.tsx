@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { connection } from "next/server";
 import Link from "next/link";
+import { RecommendedHotels } from "./recommended-hotels";
 import {
   Card,
   CardContent,
@@ -75,6 +76,9 @@ export default function RoomsPage() {
   return (
     <main className="mx-auto max-w-5xl p-8">
       <h1 className="mb-6 text-2xl font-semibold">Rooms</h1>
+      <Suspense fallback={null}>
+        <RecommendedHotels />
+      </Suspense>
       <Suspense fallback={<p>Loading rooms...</p>}>
         <RoomList />
       </Suspense>
