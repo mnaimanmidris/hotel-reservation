@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getManagerContext } from "@/lib/manager";
 import { EditForm } from "./edit-form";
@@ -23,9 +24,15 @@ async function EditBooking({
   await connection();
   const { bookingId } = await params;
 
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  if (!auth?.claims?.sub) {
+    redirect("/login");
+  }
+
   const manager = await getManagerContext();
   if (!manager) {
-    redirect("/login");
+    notFound();
   }
 
   const admin = createAdminClient();
