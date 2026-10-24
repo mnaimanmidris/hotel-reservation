@@ -3,6 +3,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { AutoRefresh } from "./auto-refresh";
 
 type Cancellation = { approval_status: string; refund_status: string };
 
@@ -96,10 +97,14 @@ async function BookingStatus({
       </p>
 
       {booking.booking_status === "pending" && (
-        <p className="text-sm">
-          Your booking will be confirmed as soon as the payment is verified.
-          Refresh this page in a few seconds.
-        </p>
+        <>
+          <AutoRefresh />
+          <p className="text-sm">
+            Your booking will be confirmed as soon as the payment is verified.
+            This page updates automatically. If it is still pending after a
+            minute, refresh the page.
+          </p>
+        </>
       )}
 
       {booking.booking_status === "confirmed" && isGuestBooking && (

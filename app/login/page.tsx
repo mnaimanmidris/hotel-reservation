@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { submitKeepingValues } from "@/lib/submit-keep-values";
 
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState(login, null);
@@ -27,7 +28,7 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={formAction} className="flex flex-col gap-4">
+          <form onSubmit={submitKeepingValues(formAction)} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="email">Email</Label>
               <Input

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { submitKeepingValues } from "@/lib/submit-keep-values";
 
 export default function RegisterPage() {
     const [state, formAction, pending] = useActionState(register, null);
@@ -29,7 +30,7 @@ export default function RegisterPage() {
                     {state?.success ? (
                         <p>Account created. Please check your email to confirm your address, then log in. </p>
                     ) : (
-                        <form action={formAction} className="flex flex-col gap-4">
+                        <form onSubmit={submitKeepingValues(formAction)} className="flex flex-col gap-4">
                             <div className="flex flex-col gap-2">
                                 <Label htmlFor="full_name">Full name</Label>
                                 <Input id="full_name" name="full_name" placeholder="Ahmad Ali" title="Enter your full name."required />
@@ -48,7 +49,7 @@ export default function RegisterPage() {
                                         <option value="+673">Brunei (+673)</option>
                                         <option value="+66">Thailand (+66)</option>
                                     </select>
-                                    <Input id="phone_number" name="phone_number" type="tel" inputMode="numeric" placeholder="12-3456789" pattern="[0-9\- ]{7,14}" title="Digits only, without the country code (for example 12-3456789)." required />
+                                    <Input id="phone_number" name="phone_number" type="tel" inputMode="numeric" placeholder="123456789" pattern="[0-9\- ]{7,14}" title="Digits only, without the country code (for example 123456789)." required />
                                 </div>
                             </div>
                             <div className="flex flex-col gap-2">

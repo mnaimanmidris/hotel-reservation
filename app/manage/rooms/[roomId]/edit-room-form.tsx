@@ -5,6 +5,7 @@ import { updateRoom } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { submitKeepingValues } from "@/lib/submit-keep-values";
 
 type Room = {
   room_id: string;
@@ -20,7 +21,7 @@ export function EditRoomForm({ room }: { room: Room }) {
   const [state, formAction, pending] = useActionState(updateRoom, null);
 
   return (
-    <form action={formAction} className="flex max-w-md flex-col gap-4">
+    <form onSubmit={submitKeepingValues(formAction)} className="flex max-w-md flex-col gap-4">
       <input type="hidden" name="room_id" value={room.room_id} />
 
       <div className="flex flex-col gap-2">

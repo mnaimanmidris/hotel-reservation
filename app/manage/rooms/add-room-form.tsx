@@ -1,18 +1,24 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { addRoom } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { submitKeepingValues } from "@/lib/submit-keep-values";
 
 const selectClass = "h-9 rounded-md border bg-transparent px-2 text-sm";
 
 export function AddRoomForm() {
   const [state, formAction, pending] = useActionState(addRoom, null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (state?.success) formRef.current?.reset();
+  }, [state]);
 
   return (
-    <form action={formAction} className="mb-8 flex flex-col gap-4 max-w-md">
+    <form ref={formRef} onSubmit={submitKeepingValues(formAction)} className="mb-8 flex flex-col gap-4 max-w-md">
       <h3 className="text-lg font-medium">Add a room</h3>
 
       <div className="flex flex-col gap-2">

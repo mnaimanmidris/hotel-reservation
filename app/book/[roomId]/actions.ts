@@ -5,12 +5,20 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
 
-type BookingState = { error: string } | null;
+type BookingValues = {
+  check_in: string;
+  check_out: string;
+  guest_name: string;
+  guest_email: string;
+  guest_phone: string;
+};
+
+type BookingState = { error: string; values?: BookingValues } | null;
 
 const DAY = 24 * 60 * 60 * 1000;
 const HOLD_MINUTES = 35;
 
-export async function startBooking(
+async function runStartBooking(
   _prevState: BookingState,
   formData: FormData
 ): Promise<BookingState> {
@@ -166,4 +174,24 @@ export async function startBooking(
   }
 
   redirect(checkoutUrl);
+}
+
+export async function startBooking(
+  prevState: BookingState,
+  formData: FormData
+): Promise<BookingState> {
+  const result = await runStartBooking(prevState, formData);
+  if (!result) return result;
+
+  // On an error, send back what the user typed so the form can keep it
+  return {
+    ...result,
+    values: {
+      check_in: String(formData.get("check_in") ?? ""),
+      check_out: String(formData.get("check_out") ?? ""),
+      guest_name: String(formData.get("guest_name") ?? ""),
+      guest_email: String(formData.get("guest_email") ?? ""),
+      guest_phone: String(formData.get("guest_phone") ?? ""),
+    },
+  };
 }

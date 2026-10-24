@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { submitReview } from "./review-actions";
 import { Button } from "@/components/ui/button";
+import { submitKeepingValues } from "@/lib/submit-keep-values";
 
 export function ReviewForm({ bookingId }: { bookingId: string }) {
   const [open, setOpen] = useState(false);
@@ -17,7 +18,7 @@ export function ReviewForm({ bookingId }: { bookingId: string }) {
   }
 
   return (
-    <form action={formAction} className="flex w-56 flex-col gap-2">
+    <form onSubmit={submitKeepingValues(formAction)} className="flex w-56 flex-col gap-2">
       <input type="hidden" name="booking_id" value={bookingId} />
       <label className="text-xs">
         Rating

@@ -5,6 +5,7 @@ import { updateBookingDatesByHotel } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { submitKeepingValues } from "@/lib/submit-keep-values";
 
 export function EditForm({
   bookingId,
@@ -23,7 +24,7 @@ export function EditForm({
   );
 
   return (
-    <form action={formAction} className="flex max-w-md flex-col gap-4">
+    <form onSubmit={submitKeepingValues(formAction)} className="flex max-w-md flex-col gap-4">
       <input type="hidden" name="booking_id" value={bookingId} />
       <p className="text-sm">
         Choose new dates for the same number of nights ({nights}). The price
