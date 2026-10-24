@@ -6,8 +6,10 @@ import {
   withinFreeChangeWindow,
 } from "@/lib/booking-rules";
 import { CancelBookingButton } from "./cancel-booking-button";
+import { ReviewForm } from "./review-form";
 
 type Cancellation = { approval_status: string; refund_status: string };
+type ReviewInfo = { review_id: string; rating: number };
 
 type BookingRow = {
   booking_id: string;
@@ -17,6 +19,7 @@ type BookingRow = {
   booking_status: string;
   rooms: { room_name: string; hotels: { hotel_name: string } | null } | null;
   cancellations: Cancellation | Cancellation[] | null;
+  reviews: ReviewInfo | ReviewInfo[] | null;
 };
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -33,6 +36,10 @@ function cancellationOf(b: BookingRow): Cancellation | null {
     : b.cancellations;
 }
 
+function reviewOf(b: BookingRow): ReviewInfo | null {
+  return Array.isArray(b.reviews) ? (b.reviews[0] ?? null) : b.reviews;
+}
+
 function statusText(b: BookingRow, c: Cancellation | null) {
   if (b.booking_status === "cancelled") {
     return c?.refund_status === "approved" ? "Cancelled, refunded" : "Cancelled";
@@ -47,11 +54,13 @@ function BookingTable({
   bookings,
   today,
   editable = false,
+  reviewable = false,
 }: {
   title: string;
   bookings: BookingRow[];
   today: string;
   editable?: boolean;
+  reviewable?: boolean;
 }) {
   return (
     <section className="mb-8">
@@ -70,6 +79,7 @@ function BookingTable({
               <th className="py-2 pr-6">Total (RM)</th>
               <th className="py-2 pr-6">Status</th>
               {editable && <th className="py-2 pr-6"></th>}
+              {reviewable && <th className="py-2 pr-6">Review</th>}
             </tr>
           </thead>
           <tbody>
@@ -112,6 +122,21 @@ function BookingTable({
                       )}
                     </td>
                   )}
+                  {reviewable && (
+                    <td className="py-2 pr-6">
+                      {(() => {
+                        const review = reviewOf(b);
+                        if (review) return `Reviewed (${review.rating}/5)`;
+                        if (
+                          b.booking_status === "confirmed" &&
+                          b.check_out < today
+                        ) {
+                          return <ReviewForm bookingId={b.booking_id} />;
+                        }
+                        return null;
+                      })()}
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -127,9 +152,9 @@ export async function BookingsList({ userId }: { userId: string }) {
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "booking_id, check_in, check_out, price_at_booking, booking_status, rooms(room_name, hotels(hotel_name)), cancellations(approval_status, refund_status)"
+      "booking_id, check_in, check_out, price_at_booking, booking_status, rooms(room_name, hotels(hotel_name)), cancellations(approval_status, refund_status), reviews(review_id, rating)"
     )
-    .eq("user_id", userId)
+    .eq("user_id", userId)  
     .in("booking_status", ["confirmed", "cancelled"])
     .order("check_in", { ascending: false });
 
@@ -166,6 +191,7 @@ export async function BookingsList({ userId }: { userId: string }) {
         title="Past and cancelled bookings"
         bookings={past}
         today={today}
+        reviewable
       />
     </div>
   );
