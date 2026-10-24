@@ -7,6 +7,24 @@ export type Recommendation = {
   source: "similar" | "popular";
 };
 
+// Hotels that currently have at least one available room
+async function getBookableHotelNames(): Promise<string[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("rooms")
+    .select("hotels!inner(hotel_name)")
+    .eq("availability_status", "available");
+
+  const rows = (data ?? []) as unknown as {
+    hotels: { hotel_name: string } | null;
+  }[];
+  return [
+    ...new Set(
+      rows.map((r) => r.hotels?.hotel_name).filter((n): n is string => !!n)
+    ),
+  ];
+}
+
 export async function getRecommendations(
   startingHotel: string | null,
   limit = 5
@@ -14,12 +32,20 @@ export async function getRecommendations(
   await connection(); // per-request, never prerendered
   const supabase = await createClient();
 
-  // Customer with a starting hotel: read precomputed hybrid scores
+  // Prefer hotels a customer can book; if none are bookable, use all hotels
+  const bookable = await getBookableHotelNames();
+  const onlyBookable = bookable.length > 0;
+
+  // Customer with a starting hotel: precomputed hybrid scores
   if (startingHotel) {
-    const { data } = await supabase
+    let scoresQuery = supabase
       .from("hotel_scores")
       .select("similar_hotel_name, hybrid_score")
-      .eq("hotel_name", startingHotel)
+      .eq("hotel_name", startingHotel);
+    if (onlyBookable) {
+      scoresQuery = scoresQuery.in("similar_hotel_name", bookable);
+    }
+    const { data } = await scoresQuery
       .order("hybrid_score", { ascending: false })
       .limit(limit);
 
@@ -32,10 +58,14 @@ export async function getRecommendations(
     }
   }
 
-  // No starting hotel (or none found): popularity fallback
-  const { data } = await supabase
+  // No starting hotel (or no similar hotel found): popularity fallback
+  let overallQuery = supabase
     .from("hotel_overall")
-    .select("hotel_name, average_rating")
+    .select("hotel_name, average_rating");
+  if (onlyBookable) {
+    overallQuery = overallQuery.in("hotel_name", bookable);
+  }
+  const { data } = await overallQuery
     .order("average_rating", { ascending: false })
     .order("hotel_name", { ascending: true })
     .limit(limit);
