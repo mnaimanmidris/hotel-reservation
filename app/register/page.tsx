@@ -18,7 +18,7 @@ export default function RegisterPage() {
     const [state, formAction, pending] = useActionState(register, null);
 
     return (
-        <main className="flex min-h-screen items-center justify-center p-4">
+        <main className="flex flex-1 items-center justify-center p-4">
             <Card className="w-full max-w-md">
                 <CardHeader>
                     <CardTitle>Create an account</CardTitle>

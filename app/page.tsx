@@ -1,14 +1,11 @@
 import Link from "next/link";
-import { Suspense } from "react";
-import { AuthStatus } from "@/components/auth-status";
+import { siteConfig } from "@/lib/site-config";
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center gap-4 p-8">
-      <Suspense fallback={<p>Loading...</p>}>
-        <AuthStatus />
-      </Suspense>
-      <h1 className="text-2xl font-semibold">Hotel Reservation System</h1>
+    <main className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+      <h1 className="text-3xl font-semibold">{siteConfig.name}</h1>
+      <p className="max-w-md text-muted-foreground">{siteConfig.description}</p>
       <Link href="/rooms" className="underline">
         View rooms
       </Link>
