@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { coverImagePath } from "@/lib/room-image-url";
+import { todayInMalaysia } from "@/lib/room-listing";
 import { BookingForm } from "./booking-form";
 
 type Room = {
@@ -9,19 +11,35 @@ type Room = {
   room_name: string;
   room_type: string;
   price_per_night: number;
+  max_guests: number;
   availability_status: string;
   hotels: { hotel_name: string } | null;
+  room_images: { image_path: string; sort_order: number }[] | null;
 };
 
-async function BookRoom({ params }: { params: Promise<{ roomId: string }> }) {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+function pick(params: Record<string, string | string[] | undefined>, key: string) {
+  const value = params[key];
+  return (Array.isArray(value) ? value[0] : value) ?? "";
+}
+
+async function BookRoom({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ roomId: string }>;
+  searchParams: SearchParams;
+}) {
   await connection();
   const { roomId } = await params;
+  const query = await searchParams;
 
   const supabase = await createClient();
   const { data } = await supabase
     .from("rooms")
     .select(
-      "room_id, room_name, room_type, price_per_night, availability_status, hotels(hotel_name)"
+      "room_id, room_name, room_type, price_per_night, max_guests, availability_status, hotels(hotel_name), room_images(image_path, sort_order)"
     )
     .eq("room_id", roomId)
     .maybeSingle();
@@ -41,40 +59,57 @@ async function BookRoom({ params }: { params: Promise<{ roomId: string }> }) {
         .maybeSingle()
     : { data: null };
 
+  // Dates and guests carried over from the room search
+  const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+  const checkIn = pick(query, "check_in");
+  const checkOut = pick(query, "check_out");
+  const guestsParam = Number(pick(query, "guests"));
+  const guests =
+    Number.isInteger(guestsParam) && guestsParam >= 1 && guestsParam <= room.max_guests
+      ? guestsParam
+      : 1;
+
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-xl">{room.room_name}</h2>
-        <p className="text-sm">
-          {room.hotels?.hotel_name} · {room.room_type} · RM{" "}
-          {Number(room.price_per_night).toFixed(2)} per night
-        </p>
-      </div>
-      <BookingForm
-        roomId={room.room_id}
-        defaults={{
-          name: profile?.full_name ?? "",
-          email: profile?.email ?? "",
-          phone: profile?.phone ?? "",
-        }}
-      />
-    </div>
+    <BookingForm
+      roomId={room.room_id}
+      today={todayInMalaysia()}
+      room={{
+        name: room.room_name,
+        hotelName: room.hotels?.hotel_name ?? "",
+        type: room.room_type,
+        pricePerNight: Number(room.price_per_night),
+        maxGuests: room.max_guests,
+        coverPath: coverImagePath(room.room_images),
+      }}
+      initial={{
+        checkIn: isDate(checkIn) ? checkIn : "",
+        checkOut: isDate(checkOut) ? checkOut : "",
+        guests,
+      }}
+      defaults={{
+        name: profile?.full_name ?? "",
+        email: profile?.email ?? "",
+        phone: profile?.phone ?? "",
+      }}
+    />
   );
 }
 
 export default function BookPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ roomId: string }>;
+  searchParams: SearchParams;
 }) {
   return (
-    <main className="mx-auto max-w-5xl p-8">
+    <main className="mx-auto w-full max-w-5xl p-4 sm:p-8">
       <Link href="/rooms" className="text-sm underline">
         Back to rooms
       </Link>
       <h1 className="my-6 text-2xl font-semibold">Book a room</h1>
       <Suspense fallback={<p>Loading...</p>}>
-        <BookRoom params={params} />
+        <BookRoom params={params} searchParams={searchParams} />
       </Suspense>
     </main>
   );

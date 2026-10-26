@@ -1,3 +1,6 @@
+// Minutes an unpaid booking keeps the dates blocked
+export const HOLD_MINUTES = 35;
+
 // Customers can change dates and cancel with an automatic refund up to this many
 // days before check-in. After that, a cancellation needs hotel approval.
 // Placeholder value, adjust it here. Future improvement: let each hotel set its own.

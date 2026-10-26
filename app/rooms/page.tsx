@@ -1,86 +1,72 @@
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/server";
 import { connection } from "next/server";
-import Link from "next/link";
-import { RecommendedHotels } from "./recommended-hotels";
+import { RoomCard } from "@/components/room-card";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  bookingLink,
+  getRoomCards,
+  parseFilters,
+  todayInMalaysia,
+} from "@/lib/room-listing";
+import { RecommendedRooms } from "./recommended-rooms";
+import { SearchBar } from "./search-bar";
 
-type Room = {
-  room_id: string;
-  room_name: string;
-  room_type: string;
-  price_per_night: number;
-  availability_status: string;
-  hotels: { hotel_name: string } | null;
-};
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-async function RoomList() {
+async function RoomsContent({ searchParams }: { searchParams: SearchParams }) {
   await connection();
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("rooms")
-    .select(
-      "room_id, room_name, room_type, price_per_night, availability_status, hotels(hotel_name)"
-    )
-    .order("price_per_night");
-
-  if (error) {
-    return <p>Could not load rooms: {error.message}</p>;
-  }
-
-  const rooms = data as unknown as Room[] | null;
-
-  if (!rooms || rooms.length === 0) {
-    return <p>No rooms available yet.</p>;
-  }
+  const filters = parseFilters(await searchParams);
+  const { rooms, error } = await getRoomCards(filters);
+  const searching = Boolean(filters.checkIn || filters.guests);
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {rooms.map((room) => (
-        <Card key={room.room_id}>
-          <CardHeader>
-            <CardTitle>{room.room_name}</CardTitle>
-            <CardDescription>
-              {room.hotels?.hotel_name} · {room.room_type}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-lg font-semibold">
-              RM {Number(room.price_per_night).toFixed(2)}{" "}
-              <span className="text-sm font-normal">per night</span>
-            </p>
-            <p className="text-sm">
-              {room.availability_status === "available"
-                ? "Available"
-                : "Unavailable"}
-            </p>
-            {room.availability_status === "available" && (
-              <Link href={`/book/${room.room_id}`} className="mt-2 inline-block underline">
-                Book this room
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+    <>
+      <SearchBar filters={filters} today={todayInMalaysia()} />
+      {filters.error && (
+        <p className="mb-6 text-sm text-red-600">{filters.error}</p>
+      )}
+
+      <Suspense fallback={null}>
+        <RecommendedRooms filters={filters} />
+      </Suspense>
+
+      <section>
+        <h2 className="mb-4 text-xl">
+          {searching ? "Matching rooms" : "All rooms"}
+        </h2>
+        {error ? (
+          <p>{error}</p>
+        ) : rooms.length === 0 ? (
+          <p>
+            {searching
+              ? "No rooms match your search. Try other dates or fewer guests."
+              : "No rooms available yet."}
+          </p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {rooms.map((room) => (
+              <RoomCard
+                key={room.room_id}
+                room={room}
+                bookHref={bookingLink(room.room_id, filters)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+    </>
   );
 }
 
-export default function RoomsPage() {
+export default function RoomsPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   return (
-    <main className="mx-auto max-w-5xl p-8">
+    <main className="mx-auto w-full max-w-6xl p-4 sm:p-8">
       <h1 className="mb-6 text-2xl font-semibold">Rooms</h1>
-      <Suspense fallback={null}>
-        <RecommendedHotels />
-      </Suspense>
       <Suspense fallback={<p>Loading rooms...</p>}>
-        <RoomList />
+        <RoomsContent searchParams={searchParams} />
       </Suspense>
     </main>
   );

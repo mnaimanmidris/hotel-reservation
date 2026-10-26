@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
+import { HOLD_MINUTES } from "@/lib/booking-rules";
 
 type BookingValues = {
   check_in: string;
@@ -16,7 +17,6 @@ type BookingValues = {
 type BookingState = { error: string; values?: BookingValues } | null;
 
 const DAY = 24 * 60 * 60 * 1000;
-const HOLD_MINUTES = 35;
 
 async function runStartBooking(
   _prevState: BookingState,
@@ -28,6 +28,7 @@ async function runStartBooking(
   const guestName = String(formData.get("guest_name") ?? "").trim();
   const guestEmail = String(formData.get("guest_email") ?? "").trim().toLowerCase();
   const guestPhone = String(formData.get("guest_phone") ?? "").replace(/[\s-]/g, "");
+  const guests = Number(formData.get("guests"));
 
   const dateFormat = /^\d{4}-\d{2}-\d{2}$/;
   if (!dateFormat.test(checkIn) || !dateFormat.test(checkOut)) {
@@ -64,15 +65,25 @@ async function runStartBooking(
     };
   }
 
+  if (!Number.isInteger(guests) || guests < 1) {
+    return { error: "Please enter the number of guests." };
+  }
+
   const supabase = await createClient();
   const { data: room } = await supabase
     .from("rooms")
-    .select("room_name, price_per_night, availability_status")
+    .select("room_name, price_per_night, availability_status, max_guests")
     .eq("room_id", roomId)
     .maybeSingle();
 
   if (!room || room.availability_status !== "available") {
     return { error: "This room is not available." };
+  }
+
+  if (guests > room.max_guests) {
+    return {
+      error: `This room allows up to ${room.max_guests} guest${room.max_guests === 1 ? "" : "s"}.`,
+    };
   }
 
   const { data: auth } = await supabase.auth.getClaims();
@@ -121,6 +132,7 @@ async function runStartBooking(
       guest_name: guestName,
       guest_email: guestEmail,
       guest_phone: guestPhone,
+      guests: guests,
       check_in: checkIn,
       check_out: checkOut,
       price_at_booking: room.price_per_night,

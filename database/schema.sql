@@ -1,7 +1,7 @@
 --1. USERS Table
 create table users (
     user_id uuid primary key references auth.users(id) on delete cascade,
-    full_name text not null unique,
+    full_name text not null,
     email text not null unique,
     phone text,
     role text not null default 'customer'
@@ -13,7 +13,7 @@ create table users (
 create table hotels (
     hotel_id uuid primary key default gen_random_uuid(),
     user_id uuid references users(user_id),
-    hotel_name text not null,
+    hotel_name text not null unique,
     description text,
     address text,
     contact_email text,
@@ -119,9 +119,9 @@ create policy "public read hotel_overall" on hotel_overall
   for select to anon, authenticated using (true);
 
 create policy "read own user row" on users
-  for select to authenticated using (user_id = auth.uid());
+  for select to authenticated using (user_id = (select auth.uid()));
 create policy "read own bookings" on bookings
-  for select to authenticated using (user_id = auth.uid());
+  for select to authenticated using (user_id = (select auth.uid()));
 
 -- PRIVILEGES: which database roles may read which tables
 grant select on public.hotels, public.rooms, public.hotel_scores, public.hotel_overall to anon, authenticated;
@@ -190,11 +190,12 @@ create policy "manager or admin delete rooms of own hotel" on rooms
     )
   );
 
-  -- SERVER ROLE: the tables the server (secret key) may use
-grant select, insert, update, delete on public.bookings, public.payments to service_role;
+-- SERVER ROLE: the tables the server (secret key) may use
+grant select, insert, update, delete on public.bookings, public.payments, public.cancellations to service_role;
 grant select on public.rooms, public.hotels to service_role;
+grant select on public.reviews to service_role;
 
-grant select, insert, update, delete on public.cancellations to service_role;
+-- CUSTOMERS: read their own cancellations (rows are limited by the policy)
 grant select on public.cancellations to authenticated;
 
 create policy "read own cancellations" on cancellations
@@ -207,42 +208,26 @@ create policy "read own cancellations" on cancellations
     )
   );
 
-  -- SERVER ROLE: the tables the server (secret key) may use
-grant select, insert, update, delete on public.bookings, public.payments, public.cancellations to service_role;
-grant select on public.rooms, public.hotels to service_role;
-
--- CUSTOMERS: read-only access to their own rows (rows are limited by policies)
-grant select on public.users, public.bookings, public.cancellations to authenticated;
-
-create policy "read own cancellations" on cancellations
-  for select to authenticated
-  using (
-    exists (
-      select 1 from bookings b
-      where b.booking_id = cancellations.booking_id
-        and b.user_id = (select auth.uid())
-    )
-  );
-
-  grant select, insert on public.reviews to authenticated;
+-- REVIEWS: customers read and write their own reviews (rules below)
+grant select, insert on public.reviews to authenticated;
 
 create policy "Customers read own reviews"
 on public.reviews
 for select
 to authenticated
-using (user_id = auth.uid());
+using (user_id = (select auth.uid()));
 
 create policy "Customers review own completed bookings"
 on public.reviews
 for insert
 to authenticated
 with check (
-  user_id = auth.uid()
+  user_id = (select auth.uid())
   and exists (
     select 1
     from public.bookings b
     where b.booking_id = reviews.booking_id
-      and b.user_id = auth.uid()
+      and b.user_id = (select auth.uid())
       and b.booking_status = 'confirmed'
       and b.check_out < (now() at time zone 'Asia/Kuala_Lumpur')::date
   )
@@ -271,7 +256,7 @@ alter table room_images enable row level security;
 grant select on public.room_images to anon, authenticated;
 grant insert, update, delete on public.room_images to authenticated;
 
-create policy "public read room_images" on room_images
+create policy "public read room_images" on room_images to anon, authenticated
   for select using (true);
 
 create policy "manager adds room_images to own rooms" on room_images
@@ -321,6 +306,18 @@ values (
   array['image/jpeg', 'image/png', 'image/webp']
 )
 on conflict (id) do nothing;
+
+create policy "manager reads room images of own rooms" on storage.objects
+  for select to authenticated
+  using (
+    bucket_id = 'room-images'
+    and (storage.foldername(name))[1] in (
+      select r.room_id::text
+      from public.rooms r
+      join public.hotels h on h.hotel_id = r.hotel_id
+      where h.user_id = (select auth.uid())
+    )
+  );
 
 create policy "manager uploads room images to own rooms" on storage.objects
   for insert to authenticated
