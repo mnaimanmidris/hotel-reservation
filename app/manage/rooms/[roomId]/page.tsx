@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { EditRoomForm } from "./edit-room-form";
+import { RoomPhotos } from "../room-photos";
 
 async function EditRoom({ params }: { params: Promise<{ roomId: string }> }) {
   await connection();
@@ -20,7 +21,7 @@ async function EditRoom({ params }: { params: Promise<{ roomId: string }> }) {
   const { data: room } = await supabase
     .from("rooms")
     .select(
-      "room_id, hotel_id, room_name, room_type, price_per_night, availability_status"
+      "room_id, hotel_id, room_name, room_type, price_per_night, availability_status, max_guests"
     )
     .eq("room_id", roomId)
     .maybeSingle();
@@ -38,7 +39,17 @@ async function EditRoom({ params }: { params: Promise<{ roomId: string }> }) {
     return <p>Room not found, or you do not manage this hotel.</p>;
   }
 
-  return <EditRoomForm room={room} />;
+  const { data: images } = await supabase
+    .from("room_images")
+    .select("image_id, image_path, sort_order")
+    .eq("room_id", roomId)
+    .order("sort_order", { ascending: true });
+
+  return (
+    <EditRoomForm room={room}>
+      <RoomPhotos roomId={room.room_id} images={images ?? []} />
+    </EditRoomForm>
+  );
 }
 
 export default function EditRoomPage({

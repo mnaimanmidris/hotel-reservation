@@ -247,3 +247,102 @@ with check (
       and b.check_out < (now() at time zone 'Asia/Kuala_Lumpur')::date
   )
 );
+
+alter table rooms
+  add column max_guests integer not null default 2
+  check (max_guests >= 1);
+
+alter table bookings
+  add column guests integer not null default 1
+  check (guests >= 1);
+
+create table room_images (
+    image_id uuid primary key default gen_random_uuid(),
+    room_id uuid not null references rooms(room_id) on delete cascade,
+    image_path text not null,
+    sort_order integer not null default 0,
+    created_at timestamptz not null default now()
+);
+
+create index room_images_room_id_idx on room_images (room_id);
+
+alter table room_images enable row level security;
+
+grant select on public.room_images to anon, authenticated;
+grant insert, update, delete on public.room_images to authenticated;
+
+create policy "public read room_images" on room_images
+  for select using (true);
+
+create policy "manager adds room_images to own rooms" on room_images
+  for insert to authenticated
+  with check (
+    exists (
+      select 1 from rooms r
+      join hotels h on h.hotel_id = r.hotel_id
+      where r.room_id = room_images.room_id
+        and h.user_id = (select auth.uid())
+    )
+  );
+
+create policy "manager edits room_images of own rooms" on room_images
+  for update to authenticated
+  using (
+    exists (
+      select 1 from rooms r
+      join hotels h on h.hotel_id = r.hotel_id
+      where r.room_id = room_images.room_id
+        and h.user_id = (select auth.uid())
+    )
+  )
+  with check (
+    exists (
+      select 1 from rooms r
+      join hotels h on h.hotel_id = r.hotel_id
+      where r.room_id = room_images.room_id
+        and h.user_id = (select auth.uid())
+    )
+  );
+
+create policy "manager deletes room_images of own rooms" on room_images
+  for delete to authenticated
+  using (
+    exists (
+      select 1 from rooms r
+      join hotels h on h.hotel_id = r.hotel_id
+      where r.room_id = room_images.room_id
+        and h.user_id = (select auth.uid())
+    )
+  );
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'room-images', 'room-images', true, 2097152,
+  array['image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do nothing;
+
+create policy "manager uploads room images to own rooms" on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'room-images'
+    and (storage.foldername(name))[1] in (
+      select r.room_id::text
+      from public.rooms r
+      join public.hotels h on h.hotel_id = r.hotel_id
+      where h.user_id = (select auth.uid())
+    )
+  );
+
+create policy "manager deletes room images of own rooms" on storage.objects
+  for delete to authenticated
+  using (
+    bucket_id = 'room-images'
+    and (storage.foldername(name))[1] in (
+      select r.room_id::text
+      from public.rooms r
+      join public.hotels h on h.hotel_id = r.hotel_id
+      where h.user_id = (select auth.uid())
+    )
+  );
+

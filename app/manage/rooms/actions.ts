@@ -4,13 +4,14 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-type RoomFormState = { error?: string; success?: boolean } | null;
+type RoomFormState = { error?: string; success?: boolean; roomId?: string } | null;
 
 type RoomValues = {
   room_name: string;
   room_type: string;
   price_per_night: number;
   availability_status: string;
+  max_guests: number;
 };
 
 function parseRoomForm(
@@ -20,6 +21,7 @@ function parseRoomForm(
   const roomType = String(formData.get("room_type") ?? "").trim();
   const price = Number(formData.get("price_per_night"));
   const status = String(formData.get("availability_status") ?? "available");
+  const maxGuests = Number(formData.get("max_guests"));
 
   if (roomName.length < 2) {
     return { error: "Please enter a room name." };
@@ -33,6 +35,9 @@ function parseRoomForm(
   if (!["available", "unavailable"].includes(status)) {
     return { error: "Invalid availability status." };
   }
+  if (!Number.isInteger(maxGuests) || maxGuests < 1 || maxGuests > 20) {
+    return { error: "Maximum guests must be a whole number from 1 to 20." };
+  }
 
   return {
     values: {
@@ -40,6 +45,7 @@ function parseRoomForm(
       room_type: roomType,
       price_per_night: price,
       availability_status: status,
+      max_guests: maxGuests,
     },
   };
 }
@@ -69,9 +75,11 @@ export async function addRoom(
     return { error: "No hotel is linked to your account." };
   }
 
-  const { error } = await supabase
+  const { data: created, error } = await supabase
     .from("rooms")
-    .insert({ hotel_id: hotel.hotel_id, ...parsed.values });
+    .insert({ hotel_id: hotel.hotel_id, ...parsed.values })
+    .select("room_id")
+    .single();
 
   if (error) {
     if (error.code === "23505") {
@@ -82,7 +90,7 @@ export async function addRoom(
 
   revalidatePath("/manage/rooms");
   revalidatePath("/rooms");
-  return { success: true };
+  return { success: true, roomId: created.room_id };
 }
 
 export async function updateRoom(
@@ -134,6 +142,11 @@ export async function deleteRoom(
     return { error: "Please log in again." };
   }
 
+  const { data: photos } = await supabase
+    .from("room_images")
+    .select("image_path")
+    .eq("room_id", roomId);
+
   const { data, error } = await supabase
     .from("rooms")
     .delete()
@@ -151,6 +164,12 @@ export async function deleteRoom(
   }
   if (!data || data.length === 0) {
     return { error: "Room not found, or you do not manage this hotel." };
+  }
+
+  if (photos && photos.length > 0) {
+    await supabase.storage
+      .from("room-images")
+      .remove(photos.map((photo) => photo.image_path));
   }
 
   revalidatePath("/manage/rooms");

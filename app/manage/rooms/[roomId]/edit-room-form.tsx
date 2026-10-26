@@ -13,11 +13,12 @@ type Room = {
   room_type: string;
   price_per_night: number;
   availability_status: string;
+  max_guests: number;
 };
 
 const selectClass = "h-9 rounded-md border bg-transparent px-2 text-sm";
 
-export function EditRoomForm({ room }: { room: Room }) {
+export function EditRoomForm({room, children,}: {room: Room; children?: React.ReactNode;}) {
   const [state, formAction, pending] = useActionState(updateRoom, null);
 
   return (
@@ -53,6 +54,20 @@ export function EditRoomForm({ room }: { room: Room }) {
       </div>
 
       <div className="flex flex-col gap-2">
+        <Label htmlFor="max_guests">Maximum guests</Label>
+        <Input
+          id="max_guests"
+          name="max_guests"
+          type="number"
+          min="1"
+          max="20"
+          step="1"
+          defaultValue={room.max_guests}
+          required
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
         <Label htmlFor="availability_status">Status</Label>
         <select
           id="availability_status"
@@ -64,6 +79,8 @@ export function EditRoomForm({ room }: { room: Room }) {
           <option value="unavailable">Unavailable</option>
         </select>
       </div>
+
+      {children}
 
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
 
