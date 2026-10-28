@@ -16,6 +16,7 @@ type BookingRow = {
   check_in: string;
   check_out: string;
   price_at_booking: number;
+  rooms_booked: number;
   booking_status: string;
   rooms: { room_name: string; hotels: { hotel_name: string } | null } | null;
   cancellations: Cancellation | Cancellation[] | null;
@@ -95,7 +96,7 @@ function BookingTable({
                   <td className="py-2 pr-6">{b.check_out}</td>
                   <td className="py-2 pr-6">{nights}</td>
                   <td className="py-2 pr-6">
-                    {(nights * Number(b.price_at_booking)).toFixed(2)}
+                    {(nights * b.rooms_booked * Number(b.price_at_booking)).toFixed(2)}
                   </td>
                   <td className="py-2 pr-6 capitalize">
                     {statusText(b, cancellation)}
@@ -152,7 +153,7 @@ export async function BookingsList({ userId }: { userId: string }) {
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "booking_id, check_in, check_out, price_at_booking, booking_status, rooms(room_name, hotels(hotel_name)), cancellations(approval_status, refund_status), reviews(review_id, rating)"
+            "booking_id, check_in, check_out, price_at_booking, rooms_booked, booking_status, rooms(room_name, hotels(hotel_name)), cancellations(approval_status, refund_status), reviews(review_id, rating)"
     )
     .eq("user_id", userId)  
     .in("booking_status", ["confirmed", "cancelled"])

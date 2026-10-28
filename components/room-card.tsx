@@ -39,7 +39,13 @@ export function RoomCard({
         </p>
         <p className="text-sm text-muted-foreground">
           Up to {room.max_guests} guest{room.max_guests === 1 ? "" : "s"}
+          {room.quantity > 1 ? " per room" : ""}
         </p>
+        {room.quantity > 1 && room.unitsLeft !== null && room.unitsLeft <= 3 && (
+          <p className="text-xs font-medium text-primary">
+            Only {room.unitsLeft} left for these dates
+          </p>
+        )}
 
         <div className="mt-auto flex items-end justify-between gap-3 pt-3">
           <div>

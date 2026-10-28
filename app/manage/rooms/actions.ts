@@ -9,6 +9,7 @@ type RoomFormState = { error?: string; success?: boolean; roomId?: string } | nu
 type RoomValues = {
   room_name: string;
   room_type: string;
+  quantity: number;
   price_per_night: number;
   availability_status: string;
   max_guests: number;
@@ -22,6 +23,7 @@ function parseRoomForm(
   const price = Number(formData.get("price_per_night"));
   const status = String(formData.get("availability_status") ?? "available");
   const maxGuests = Number(formData.get("max_guests"));
+  const quantity = Number(formData.get("quantity"));
 
   if (roomName.length < 2) {
     return { error: "Please enter a room name." };
@@ -38,11 +40,15 @@ function parseRoomForm(
   if (!Number.isInteger(maxGuests) || maxGuests < 1 || maxGuests > 20) {
     return { error: "Maximum guests must be a whole number from 1 to 20." };
   }
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 500) {
+    return { error: "Number of rooms must be a whole number from 1 to 500." };
+  }
 
   return {
     values: {
       room_name: roomName,
       room_type: roomType,
+      quantity: quantity,
       price_per_night: price,
       availability_status: status,
       max_guests: maxGuests,

@@ -21,7 +21,7 @@ async function EditRoom({ params }: { params: Promise<{ roomId: string }> }) {
   const { data: room } = await supabase
     .from("rooms")
     .select(
-      "room_id, hotel_id, room_name, room_type, price_per_night, availability_status, max_guests"
+      "room_id, hotel_id, room_name, room_type, price_per_night, availability_status, max_guests, quantity"
     )
     .eq("room_id", roomId)
     .maybeSingle();

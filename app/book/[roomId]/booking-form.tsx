@@ -13,6 +13,7 @@ type RoomInfo = {
   name: string;
   hotelName: string;
   type: string;
+  quantity: number;
   pricePerNight: number;
   maxGuests: number;
   coverPath: string | null;
@@ -66,7 +67,12 @@ export function BookingForm({
     checkIn && checkOut && checkOut > checkIn
       ? Math.round((utc(checkOut).getTime() - utc(checkIn).getTime()) / DAY)
       : null;
-  const total = nights ? nights * room.pricePerNight : null;
+  const guestCount = Number(guests);
+  const roomsNeeded =
+    Number.isInteger(guestCount) && guestCount >= 1
+      ? Math.ceil(guestCount / room.maxGuests)
+      : 1;
+  const total = nights ? nights * roomsNeeded * room.pricePerNight : null;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_20rem] lg:items-start">
@@ -111,15 +117,16 @@ export function BookingForm({
               name="guests"
               type="number"
               min="1"
-              max={room.maxGuests}
+              max={room.maxGuests * room.quantity}
               step="1"
               value={guests}
               onChange={(e) => setGuests(e.target.value)}
               required
             />
             <p className="text-xs text-muted-foreground">
-              This room allows up to {room.maxGuests} guest
-              {room.maxGuests === 1 ? "" : "s"}.
+              {room.quantity > 1
+                ? `Each room fits up to ${room.maxGuests} guest${room.maxGuests === 1 ? "" : "s"}. We book as many rooms as your party needs (up to ${room.quantity}).`
+                : `This room allows up to ${room.maxGuests} guest${room.maxGuests === 1 ? "" : "s"}.`}
             </p>
           </div>
         </section>
@@ -185,9 +192,10 @@ export function BookingForm({
             <SummaryRow label="Check-out" value={checkOut ? formatDate(checkOut) : "-"} />
             <SummaryRow label="Nights" value={nights ? String(nights) : "-"} />
             <SummaryRow label="Guests" value={guests || "-"} />
+            <SummaryRow label="Rooms" value={String(roomsNeeded)} />
           </dl>
           <div className="flex flex-col gap-2 border-t pt-3 text-sm">
-            <SummaryRow label="Price / night" value={`RM ${room.pricePerNight.toFixed(2)}`} />
+            <SummaryRow label="Price / room / night" value={`RM ${room.pricePerNight.toFixed(2)}`} />
             <div className="flex justify-between gap-4 font-medium">
               <span>Total</span>
               <span className="text-primary">

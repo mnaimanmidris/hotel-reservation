@@ -16,7 +16,7 @@ async function loadPendingRequest(bookingId: string, hotelId: string) {
   const { data } = await admin
     .from("bookings")
     .select(
-      "booking_id, check_in, check_out, price_at_booking, rooms!inner(hotel_id), cancellations!inner(approval_status)"
+      "booking_id, check_in, check_out, price_at_booking, rooms_booked, rooms!inner(hotel_id), cancellations!inner(approval_status)"
     )
     .eq("booking_id", bookingId)
     .eq("rooms.hotel_id", hotelId)
@@ -96,7 +96,7 @@ export async function rejectCancellation(
   try {
     await sendCancellationEmail(
       bookingId,
-      nights * Number(request.price_at_booking),
+      nights * request.rooms_booked * Number(request.price_at_booking),
       "rejected"
     );
   } catch (err) {

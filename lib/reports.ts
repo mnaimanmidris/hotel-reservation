@@ -16,6 +16,7 @@ type BookingRow = {
   check_in: string;
   check_out: string;
   price_at_booking: number;
+  rooms_booked: number;
   booking_status: string;
   rooms: { room_name: string } | null;
   payments: Payment | Payment[] | null;
@@ -91,7 +92,7 @@ export async function getReportData(
   const { data, error } = await admin
     .from("bookings")
     .select(
-      "booking_id, user_id, guest_name, guest_email, guest_phone, check_in, check_out, price_at_booking, booking_status, rooms!inner(room_name, hotel_id), payments(amount, payment_status), cancellations(approval_status)"
+      "booking_id, user_id, guest_name, guest_email, guest_phone, check_in, check_out, price_at_booking, rooms_booked, booking_status, rooms!inner(room_name, hotel_id), payments(amount, payment_status), cancellations(approval_status)"
     )
     .eq("rooms.hotel_id", hotelId)
     .in("booking_status", ["confirmed", "cancelled"])
@@ -122,7 +123,7 @@ export async function getReportData(
   const bookings: ReportData["bookings"] = [];
 
   for (const b of rows) {
-    const n = nightsBetween(b.check_in, b.check_out);
+    const n = nightsBetween(b.check_in, b.check_out) * b.rooms_booked;
     const payment = one(b.payments);
     const cancellation = one(b.cancellations);
     const amount = payment ? Number(payment.amount) : 0;

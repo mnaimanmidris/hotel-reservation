@@ -10,6 +10,7 @@ type Room = {
   room_id: string;
   room_name: string;
   room_type: string;
+  quantity: number;
   price_per_night: number;
   max_guests: number;
   availability_status: string;
@@ -39,7 +40,7 @@ async function BookRoom({
   const { data } = await supabase
     .from("rooms")
     .select(
-      "room_id, room_name, room_type, price_per_night, max_guests, availability_status, hotels(hotel_name), room_images(image_path, sort_order)"
+      "room_id, room_name, room_type, price_per_night, max_guests, quantity, availability_status, hotels(hotel_name), room_images(image_path, sort_order)"
     )
     .eq("room_id", roomId)
     .maybeSingle();
@@ -65,7 +66,7 @@ async function BookRoom({
   const checkOut = pick(query, "check_out");
   const guestsParam = Number(pick(query, "guests"));
   const guests =
-    Number.isInteger(guestsParam) && guestsParam >= 1 && guestsParam <= room.max_guests
+    Number.isInteger(guestsParam) && guestsParam >= 1 && guestsParam <= room.max_guests * room.quantity
       ? guestsParam
       : 1;
 
@@ -79,6 +80,7 @@ async function BookRoom({
         type: room.room_type,
         pricePerNight: Number(room.price_per_night),
         maxGuests: room.max_guests,
+        quantity: room.quantity,
         coverPath: coverImagePath(room.room_images),
       }}
       initial={{

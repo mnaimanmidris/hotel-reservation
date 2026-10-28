@@ -14,15 +14,25 @@ type Room = {
   price_per_night: number;
   availability_status: string;
   max_guests: number;
+  quantity: number;
 };
 
 const selectClass = "h-9 rounded-md border bg-transparent px-2 text-sm";
 
-export function EditRoomForm({room, children,}: {room: Room; children?: React.ReactNode;}) {
+export function EditRoomForm({
+  room,
+  children,
+}: {
+  room: Room;
+  children?: React.ReactNode;
+}) {
   const [state, formAction, pending] = useActionState(updateRoom, null);
 
   return (
-    <form onSubmit={submitKeepingValues(formAction)} className="flex max-w-md flex-col gap-4">
+    <form
+      onSubmit={submitKeepingValues(formAction)}
+      className="flex max-w-md flex-col gap-4"
+    >
       <input type="hidden" name="room_id" value={room.room_id} />
 
       <div className="flex flex-col gap-2">
@@ -32,7 +42,12 @@ export function EditRoomForm({room, children,}: {room: Room; children?: React.Re
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="room_type">Room type</Label>
-        <select id="room_type" name="room_type" defaultValue={room.room_type} className={selectClass}>
+        <select
+          id="room_type"
+          name="room_type"
+          defaultValue={room.room_type}
+          className={selectClass}
+        >
           <option value="Standard">Standard</option>
           <option value="Deluxe">Deluxe</option>
           <option value="Suite">Suite</option>
@@ -63,6 +78,20 @@ export function EditRoomForm({room, children,}: {room: Room; children?: React.Re
           max="20"
           step="1"
           defaultValue={room.max_guests}
+          required
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="quantity">Number of rooms of this type</Label>
+        <Input
+          id="quantity"
+          name="quantity"
+          type="number"
+          min="1"
+          max="500"
+          step="1"
+          defaultValue={room.quantity}
           required
         />
       </div>

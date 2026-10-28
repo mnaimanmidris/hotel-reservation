@@ -30,7 +30,7 @@ export async function requestCancellation(
   const admin = createAdminClient();
   const { data: booking } = await admin
     .from("bookings")
-    .select("booking_id, check_in, check_out, price_at_booking, booking_status")
+    .select("booking_id, check_in, check_out, price_at_booking, rooms_booked, booking_status")
     .eq("booking_id", bookingId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -60,7 +60,7 @@ export async function requestCancellation(
       new Date(booking.check_in).getTime()) /
       DAY
   );
-  const total = nights * Number(booking.price_at_booking);
+  const total = nights * booking.rooms_booked * Number(booking.price_at_booking);
 
   // Rule 1: inside the free window, cancel and refund automatically
   if (withinFreeChangeWindow(booking.check_in, today)) {

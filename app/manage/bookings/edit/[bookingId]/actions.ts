@@ -5,11 +5,11 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getManagerContext } from "@/lib/manager";
 import { sendBookingConfirmation } from "@/lib/email";
+import { getUnitsLeft } from "@/lib/availability";
 
 type EditState = { error: string } | null;
 
 const DAY = 24 * 60 * 60 * 1000;
-const HOLD_MINUTES = 35;
 
 function nightsBetween(checkIn: string, checkOut: string) {
   return Math.round(
@@ -51,7 +51,7 @@ export async function updateBookingDatesByHotel(
   const { data: booking } = await admin
     .from("bookings")
     .select(
-      "booking_id, room_id, guest_email, check_in, check_out, price_at_booking, rooms!inner(hotel_id)"
+      "booking_id, room_id, guest_email, check_in, check_out, price_at_booking, rooms_booked, rooms!inner(hotel_id)"
     )
     .eq("booking_id", bookingId)
     .eq("rooms.hotel_id", manager.hotelId)
@@ -85,38 +85,24 @@ export async function updateBookingDatesByHotel(
     };
   }
 
-  // Is the room free for the new dates? (this booking itself is ignored)
-  const cutoff = new Date(Date.now() - HOLD_MINUTES * 60 * 1000).toISOString();
-
-  const { data: confirmedClash, error: confirmedError } = await admin
-    .from("bookings")
-    .select("booking_id")
+  // Are enough rooms free for the new dates? (this booking itself is ignored)
+  const { data: roomRow } = await admin
+    .from("rooms")
+    .select("quantity")
     .eq("room_id", booking.room_id)
-    .eq("booking_status", "confirmed")
-    .neq("booking_id", bookingId)
-    .lt("check_in", checkOut)
-    .gt("check_out", checkIn)
-    .limit(1);
+    .maybeSingle();
 
-  const { data: pendingClash, error: pendingError } = await admin
-    .from("bookings")
-    .select("booking_id")
-    .eq("room_id", booking.room_id)
-    .eq("booking_status", "pending")
-    .gte("created_at", cutoff)
-    .neq("guest_email", booking.guest_email)
-    .lt("check_in", checkOut)
-    .gt("check_out", checkIn)
-    .limit(1);
-
-  if (confirmedError || pendingError) {
+  const unitsLeft = await getUnitsLeft(
+    [{ room_id: booking.room_id, quantity: roomRow?.quantity ?? 1 }],
+    checkIn,
+    checkOut,
+    { excludeBookingId: bookingId, ignorePendingEmail: booking.guest_email }
+  );
+  if (!unitsLeft) {
     return { error: "Could not check availability. Please try again." };
   }
-  if (
-    (confirmedClash && confirmedClash.length > 0) ||
-    (pendingClash && pendingClash.length > 0)
-  ) {
-    return { error: "This room is already booked for those dates." };
+  if ((unitsLeft.get(booking.room_id) ?? 0) < booking.rooms_booked) {
+    return { error: "Sorry, this room is already booked for those dates." };
   }
 
   const { error: updateError } = await admin
@@ -135,7 +121,7 @@ export async function updateBookingDatesByHotel(
   try {
     await sendBookingConfirmation(
       bookingId,
-      newNights * Number(booking.price_at_booking),
+      newNights * booking.rooms_booked * Number(booking.price_at_booking),
       "updated"
     );
   } catch (err) {

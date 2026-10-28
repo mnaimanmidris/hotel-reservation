@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendBookingConfirmation } from "@/lib/email";
+import { getUnitsLeft } from "@/lib/availability";
 
 function check(error: { message: string } | null, what: string) {
   if (error) {
@@ -22,7 +23,7 @@ async function confirmBooking(session: Stripe.Checkout.Session) {
 
   const { data: booking, error: bookingError } = await admin
     .from("bookings")
-    .select("booking_id, room_id, check_in, check_out, booking_status")
+    .select("booking_id, room_id, check_in, check_out, booking_status, rooms_booked")
     .eq("booking_id", bookingId)
     .maybeSingle();
   check(bookingError, "read booking");
@@ -35,19 +36,25 @@ async function confirmBooking(session: Stripe.Checkout.Session) {
   const amount = (session.amount_total ?? 0) / 100;
   const paidAt = new Date().toISOString();
 
-  // Did another booking get confirmed for these dates in the meantime?
-  const { data: clash, error: clashError } = await admin
-    .from("bookings")
-    .select("booking_id")
+  // Did other confirmed bookings take the rooms for these dates in the meantime?
+  const { data: roomRow, error: roomError } = await admin
+    .from("rooms")
+    .select("quantity")
     .eq("room_id", booking.room_id)
-    .eq("booking_status", "confirmed")
-    .neq("booking_id", bookingId)
-    .lt("check_in", booking.check_out)
-    .gt("check_out", booking.check_in)
-    .limit(1);
-  check(clashError, "check clash");
+    .maybeSingle();
+  check(roomError, "read room");
 
-  if (clash && clash.length > 0) {
+  const unitsLeft = await getUnitsLeft(
+    [{ room_id: booking.room_id, quantity: roomRow?.quantity ?? 1 }],
+    booking.check_in,
+    booking.check_out,
+    { excludeBookingId: bookingId, confirmedOnly: true }
+  );
+  if (!unitsLeft) {
+    throw new Error("check clash: could not read bookings");
+  }
+
+  if ((unitsLeft.get(booking.room_id) ?? 0) < booking.rooms_booked) {
     await stripe.refunds.create({ payment_intent: paymentIntentId });
     const { error: cancelError } = await admin
       .from("bookings")
@@ -85,7 +92,7 @@ async function confirmBooking(session: Stripe.Checkout.Session) {
     .update({ booking_status: "confirmed" })
     .eq("booking_id", bookingId);
   check(confirmError, "confirm booking");
-  
+
   try {
     await sendBookingConfirmation(bookingId, amount);
   } catch (err) {

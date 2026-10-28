@@ -1,8 +1,10 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { HOLD_MINUTES } from "@/lib/booking-rules";
+import { getUnitsLeft } from "@/lib/availability";
 import { coverImagePath } from "@/lib/room-image-url";
+
+const DAY = 24 * 60 * 60 * 1000;
 
 export type RoomFilters = {
   checkIn?: string;
@@ -17,6 +19,8 @@ export type RoomCardData = {
   room_type: string;
   price_per_night: number;
   max_guests: number;
+  quantity: number;
+  unitsLeft: number | null;
   available: boolean;
   hotel_name: string;
   coverPath: string | null;
@@ -29,6 +33,7 @@ type RoomRow = {
   room_type: string;
   price_per_night: number;
   max_guests: number;
+  quantity: number;
   availability_status: string;
   hotels: { hotel_name: string } | null;
   room_images: { image_path: string; sort_order: number }[] | null;
@@ -55,10 +60,10 @@ export function parseFilters(
 
   if (guestsRaw) {
     const guests = Number(guestsRaw);
-    if (Number.isInteger(guests) && guests >= 1 && guests <= 20) {
+    if (Number.isInteger(guests) && guests >= 1 && guests <= 500) {
       filters.guests = guests;
     } else {
-      filters.error = "Guests must be a whole number from 1 to 20.";
+      filters.error = "Guests must be a whole number of 1 or more.";
     }
   }
 
@@ -69,6 +74,8 @@ export function parseFilters(
       filters.error = "Check-in cannot be in the past.";
     } else if (checkOut <= checkIn) {
       filters.error = "Check-out must be after check-in.";
+    } else if ((Date.parse(checkOut) - Date.parse(checkIn)) / DAY > 30) {
+      filters.error = "The longest stay is 30 nights.";
     } else {
       filters.checkIn = checkIn;
       filters.checkOut = checkOut;
@@ -88,30 +95,6 @@ export function bookingLink(roomId: string, filters: RoomFilters) {
   if (filters.guests) params.set("guests", String(filters.guests));
   const query = params.toString();
   return query ? `/book/${roomId}?${query}` : `/book/${roomId}`;
-}
-
-// Rooms blocked on those dates: confirmed bookings, and pending ones still on hold
-async function getBookedRoomIds(checkIn: string, checkOut: string) {
-  const admin = createAdminClient();
-  const cutoff = new Date(Date.now() - HOLD_MINUTES * 60 * 1000).toISOString();
-
-  const { data: confirmed, error: confirmedError } = await admin
-    .from("bookings")
-    .select("room_id")
-    .eq("booking_status", "confirmed")
-    .lt("check_in", checkOut)
-    .gt("check_out", checkIn);
-
-  const { data: pending, error: pendingError } = await admin
-    .from("bookings")
-    .select("room_id")
-    .eq("booking_status", "pending")
-    .gte("created_at", cutoff)
-    .lt("check_in", checkOut)
-    .gt("check_out", checkIn);
-
-  if (confirmedError || pendingError) return null;
-  return new Set([...(confirmed ?? []), ...(pending ?? [])].map((b) => b.room_id));
 }
 
 // Average rating per room, from the reviews of that room's bookings
@@ -152,11 +135,10 @@ export async function getRoomCards(
   let query = supabase
     .from("rooms")
     .select(
-      "room_id, room_name, room_type, price_per_night, max_guests, availability_status, hotels!inner(hotel_name), room_images(image_path, sort_order)"
+      "room_id, room_name, room_type, price_per_night, max_guests, quantity, availability_status, hotels!inner(hotel_name), room_images(image_path, sort_order)"
     )
     .order("price_per_night");
 
-  if (filters.guests) query = query.gte("max_guests", filters.guests);
   if (hotelNames) query = query.in("hotels.hotel_name", hotelNames);
 
   const { data, error } = await query;
@@ -164,15 +146,28 @@ export async function getRoomCards(
 
   let rows = (data ?? []) as unknown as RoomRow[];
 
-  // With dates, show only rooms that are free on those dates
+  // A party fits when the rooms of this type can hold all of its guests
+  const guests = filters.guests;
+  if (guests) {
+    rows = rows.filter((row) => row.max_guests * row.quantity >= guests);
+  }
+
+  // With dates, keep only room types with enough rooms free on every night
+  let unitsLeft: Map<string, number> | null = null;
   if (filters.checkIn && filters.checkOut) {
-    const booked = await getBookedRoomIds(filters.checkIn, filters.checkOut);
-    if (!booked) {
+    unitsLeft = await getUnitsLeft(
+      rows.map((row) => ({ room_id: row.room_id, quantity: row.quantity })),
+      filters.checkIn,
+      filters.checkOut
+    );
+    if (!unitsLeft) {
       return { rooms: [], error: "Could not check availability. Please try again." };
     }
-    rows = rows.filter(
-      (row) => row.availability_status === "available" && !booked.has(row.room_id)
-    );
+    const left = unitsLeft;
+    rows = rows.filter((row) => {
+      const needed = guests ? Math.ceil(guests / row.max_guests) : 1;
+      return row.availability_status === "available" && (left.get(row.room_id) ?? 0) >= needed;
+    });
   }
 
   const ratings = await getRatings(rows.map((row) => row.room_id));
@@ -184,6 +179,8 @@ export async function getRoomCards(
       room_type: row.room_type,
       price_per_night: Number(row.price_per_night),
       max_guests: row.max_guests,
+      quantity: row.quantity,
+      unitsLeft: unitsLeft?.get(row.room_id) ?? null,
       available: row.availability_status === "available",
       hotel_name: row.hotels?.hotel_name ?? "",
       coverPath: coverImagePath(row.room_images),

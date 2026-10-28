@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
 import { HOLD_MINUTES } from "@/lib/booking-rules";
+import { getUnitsLeft } from "@/lib/availability";
 
 type BookingValues = {
   check_in: string;
@@ -72,7 +73,7 @@ async function runStartBooking(
   const supabase = await createClient();
   const { data: room } = await supabase
     .from("rooms")
-    .select("room_name, price_per_night, availability_status, max_guests")
+    .select("room_name, price_per_night, availability_status, max_guests, quantity")
     .eq("room_id", roomId)
     .maybeSingle();
 
@@ -80,49 +81,36 @@ async function runStartBooking(
     return { error: "This room is not available." };
   }
 
-  if (guests > room.max_guests) {
+  const roomsNeeded = Math.ceil(guests / room.max_guests);
+  if (roomsNeeded > room.quantity) {
     return {
-      error: `This room allows up to ${room.max_guests} guest${room.max_guests === 1 ? "" : "s"}.`,
+      error: `This hotel has ${room.quantity} of this room type, which fits up to ${room.quantity * room.max_guests} guests.`,
     };
   }
 
   const { data: auth } = await supabase.auth.getClaims();
   const userId = auth?.claims?.sub ?? null;
 
-  const admin = createAdminClient();
-  const cutoff = new Date(Date.now() - HOLD_MINUTES * 60 * 1000).toISOString();
-
-  // Confirmed bookings always block the dates
-  const { data: confirmedClash, error: confirmedError } = await admin
-    .from("bookings")
-    .select("booking_id")
-    .eq("room_id", roomId)
-    .eq("booking_status", "confirmed")
-    .lt("check_in", checkOut)
-    .gt("check_out", checkIn)
-    .limit(1);
-
-  // Pending bookings block only for 35 minutes, and not for the same person
-  const { data: pendingClash, error: pendingError } = await admin
-    .from("bookings")
-    .select("booking_id")
-    .eq("room_id", roomId)
-    .eq("booking_status", "pending")
-    .gte("created_at", cutoff)
-    .neq("guest_email", guestEmail)
-    .lt("check_in", checkOut)
-    .gt("check_out", checkIn)
-    .limit(1);
-
-  if (confirmedError || pendingError) {
+    const unitsLeft = await getUnitsLeft(
+    [{ room_id: roomId, quantity: room.quantity }],
+    checkIn,
+    checkOut,
+    { ignorePendingEmail: guestEmail }
+  );
+  if (!unitsLeft) {
     return { error: "Could not check availability. Please try again." };
   }
-  if (
-    (confirmedClash && confirmedClash.length > 0) ||
-    (pendingClash && pendingClash.length > 0)
-  ) {
-    return { error: "Sorry, this room is already booked for those dates." };
+  const left = unitsLeft.get(roomId) ?? 0;
+  if (left < roomsNeeded) {
+    return {
+      error:
+        left === 0
+          ? "Sorry, no rooms of this type are available for those dates."
+          : `Only ${left} room${left === 1 ? "" : "s"} of this type left for those dates, but ${guests} guests need ${roomsNeeded}.`,
+    };
   }
+
+  const admin = createAdminClient();
 
   const { data: booking, error: insertError } = await admin
     .from("bookings")
@@ -133,6 +121,7 @@ async function runStartBooking(
       guest_email: guestEmail,
       guest_phone: guestPhone,
       guests: guests,
+      rooms_booked: roomsNeeded,
       check_in: checkIn,
       check_out: checkOut,
       price_at_booking: room.price_per_night,
@@ -161,9 +150,9 @@ async function runStartBooking(
           quantity: 1,
           price_data: {
             currency: "myr",
-            unit_amount: Math.round(nights * Number(room.price_per_night) * 100),
+            unit_amount: Math.round(nights * roomsNeeded * Number(room.price_per_night) * 100),
             product_data: {
-              name: `${room.room_name}: ${checkIn} to ${checkOut} (${nights} night${nights > 1 ? "s" : ""})`,
+              name: `${roomsNeeded > 1 ? `${roomsNeeded} x ` : ""}${room.room_name}: ${checkIn} to ${checkOut} (${nights} night${nights > 1 ? "s" : ""})`,
             },
           },
         },

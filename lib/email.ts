@@ -9,6 +9,7 @@ type BookingRow = {
   check_in: string;
   check_out: string;
   price_at_booking: number;
+  rooms_booked: number;
   rooms: { room_name: string; hotels: { hotel_name: string } | null } | null;
 };
 
@@ -29,7 +30,7 @@ export async function sendBookingConfirmation(
   const { data, error } = await admin
     .from("bookings")
     .select(
-      "booking_id, guest_name, guest_email, check_in, check_out, price_at_booking, rooms(room_name, hotels(hotel_name))"
+      "booking_id, guest_name, guest_email, check_in, check_out, price_at_booking, rooms_booked, rooms(room_name, hotels(hotel_name))"
     )
     .eq("booking_id", bookingId)
     .single();
@@ -130,7 +131,7 @@ export async function sendCancellationEmail(
       <p>${messages[kind]}</p>
       <table cellpadding="6">
         <tr><td>Hotel</td><td>${hotelName}</td></tr>
-        <tr><td>Room</td><td>${roomName}</td></tr>
+        <tr><td>Rooms</td><td>${booking.rooms_booked}</td></tr>
         <tr><td>Check-in</td><td>${booking.check_in}</td></tr>
         <tr><td>Check-out</td><td>${booking.check_out}</td></tr>
         <tr><td>Booking reference</td><td>${booking.booking_id}</td></tr>

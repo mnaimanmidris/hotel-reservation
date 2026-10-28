@@ -100,6 +100,19 @@ export function AddRoomForm() {
           required
         />
       </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="quantity">Number of rooms of this type</Label>
+        <Input
+          id="quantity"
+          name="quantity"
+          type="number"
+          min="1"
+          max="500"
+          step="1"
+          defaultValue={1}
+          required
+        />
+      </div>
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="availability_status">Status</Label>

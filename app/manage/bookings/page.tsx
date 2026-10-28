@@ -18,6 +18,7 @@ type BookingRow = {
   check_in: string;
   check_out: string;
   price_at_booking: number;
+  rooms_booked: number;
   booking_status: string;
   rooms: { room_name: string; hotel_id: string } | null;
   cancellations: Cancellation | Cancellation[] | null;
@@ -96,7 +97,7 @@ async function ManageBookings({
   const { data, error } = await admin
     .from("bookings")
     .select(
-      "booking_id, user_id, guest_name, guest_email, guest_phone, check_in, check_out, price_at_booking, booking_status, rooms!inner(room_name, hotel_id), cancellations(approval_status, refund_status)"
+      "booking_id, user_id, guest_name, guest_email, guest_phone, check_in, check_out, price_at_booking, rooms_booked, booking_status, rooms!inner(room_name, hotel_id), cancellations(approval_status, refund_status)"
     )
     .eq("rooms.hotel_id", hotel.hotel_id)
     .in("booking_status", ["confirmed", "cancelled"])
@@ -175,7 +176,7 @@ async function ManageBookings({
                     <td className="py-2 pr-6">{b.check_out}</td>
                     <td className="py-2 pr-6">{nights}</td>
                     <td className="py-2 pr-6">
-                      {(nights * Number(b.price_at_booking)).toFixed(2)}
+                      {(nights * b.rooms_booked * Number(b.price_at_booking)).toFixed(2)}
                     </td>
                     <td className="py-2 pr-6">
                       {b.user_id ? "Registered" : "Guest"}
