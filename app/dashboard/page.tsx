@@ -35,7 +35,7 @@ async function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <main className="mx-auto max-w-5xl p-8">
+    <main className="mx-auto w-full max-w-5xl p-4 sm:p-8">
       <h1 className="mb-6 text-2xl font-semibold">My bookings</h1>
       <Suspense fallback={<p>Loading...</p>}>
         <DashboardContent />

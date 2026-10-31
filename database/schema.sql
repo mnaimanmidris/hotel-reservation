@@ -343,3 +343,11 @@ create policy "manager deletes room images of own rooms" on storage.objects
     )
   );
 
+alter table rooms
+  add column quantity integer not null default 1
+  check (quantity >= 1);
+
+alter table bookings
+  add column rooms_booked integer not null default 1
+  check (rooms_booked >= 1);
+
