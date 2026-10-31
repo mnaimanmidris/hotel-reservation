@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { safeNext } from "@/lib/safe-next";
 
 type LoginState = { error?: string } | null;
 
@@ -35,7 +36,8 @@ export async function login(
     .eq("user_id", signedIn.user.id)
     .maybeSingle();
 
-  redirect(profile?.role === "hotel_management" ? "/manage" : "/dashboard");
+  const next = safeNext(String(formData.get("next") ?? ""));
+  redirect(profile?.role === "hotel_management" ? "/manage" : (next ?? "/dashboard"));
   
 }
 

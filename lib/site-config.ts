@@ -9,8 +9,7 @@ export const siteConfig = {
   nav: {
     guest: [
       { href: "/rooms", label: "Rooms" },
-      { href: "/login", label: "Login" },
-      { href: "/register", label: "Register" },
+      { href: "/login", label: "Login / Register" },
     ],
     customer: [
       { href: "/rooms", label: "Rooms" },

@@ -1,67 +1,37 @@
-"use client";
+import { Suspense } from "react";
+import { AuthPanels } from "@/components/auth/auth-panels";
+import { safeNext } from "@/lib/safe-next";
 
-import Link from "next/link";
-import { useActionState } from "react";
-import { login } from "./actions";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { submitKeepingValues } from "@/lib/submit-keep-values";
+export const metadata = { title: "Log in or register" };
 
-export default function LoginPage() {
-  const [state, formAction, pending] = useActionState(login, null);
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
+async function LoginContent({ searchParams }: { searchParams: SearchParams }) {
+  const params = await searchParams;
+  const raw = Array.isArray(params.next) ? params.next[0] : params.next;
+  const next = safeNext(raw);
+
+  // A guest who came from a booking page goes back to it, marked as a guest
+  const guestHref = next?.startsWith("/book/")
+    ? `${next}${next.includes("?") ? "&" : "?"}guest=1`
+    : "/rooms";
+
+  const tab = Array.isArray(params.tab) ? params.tab[0] : params.tab;
   return (
-    <main className="flex flex-1 items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Log in</CardTitle>
-          <CardDescription>
-            Log in to manage your bookings and see recommendations.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={submitKeepingValues(formAction)} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="name@example.com"
-                required
-              />
-            </div>
+    <AuthPanels
+      initialTab={tab === "register" ? "register" : "login"}
+      next={next ?? ""}
+      guestHref={guestHref}
+    />
+  );
+}
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required />
-            </div>
-
-            {state?.error && (
-              <p className="text-sm text-red-600">{state.error}</p>
-            )}
-
-            <Button type="submit" disabled={pending}>
-              {pending ? "Logging in..." : "Log in"}
-            </Button>
-
-            <p className="text-center text-sm">
-              No account yet?{" "}
-              <Link href="/register" className="underline">
-                Register
-              </Link>
-            </p>
-          </form>
-        </CardContent>
-      </Card>
+export default function LoginPage({ searchParams }: { searchParams: SearchParams }) {
+  return (
+    <main className="flex flex-1 items-start justify-center p-4 sm:p-8">
+      <Suspense fallback={null}>
+        <LoginContent searchParams={searchParams} />
+      </Suspense>
     </main>
   );
 }

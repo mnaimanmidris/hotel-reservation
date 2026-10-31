@@ -37,6 +37,9 @@ async function BookRoom({
   const query = await searchParams;
 
   const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  const userId = auth?.claims?.sub;
+
   const { data } = await supabase
     .from("rooms")
     .select(
@@ -50,8 +53,6 @@ async function BookRoom({
     return <p>This room is not available.</p>;
   }
 
-  const { data: auth } = await supabase.auth.getClaims();
-  const userId = auth?.claims?.sub;
   const { data: profile } = userId
     ? await supabase
         .from("users")
