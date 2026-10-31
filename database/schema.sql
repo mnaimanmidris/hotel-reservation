@@ -351,3 +351,9 @@ alter table bookings
   add column rooms_booked integer not null default 1
   check (rooms_booked >= 1);
 
+grant update (full_name, phone) on public.users to authenticated;
+
+create policy "update own profile" on users
+  for update to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));

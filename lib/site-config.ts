@@ -15,6 +15,7 @@ export const siteConfig = {
     customer: [
       { href: "/rooms", label: "Rooms" },
       { href: "/dashboard", label: "My bookings" },
+      { href: "/profile", label: "Profile" },
     ],
     hotel_management: [
       { href: "/manage", label: "Dashboard" },
