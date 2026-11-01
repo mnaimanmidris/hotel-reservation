@@ -2,7 +2,7 @@ import { connection } from "next/server";
 import { RoomCard } from "@/components/room-card";
 import { createClient } from "@/lib/supabase/server";
 import { getRecommendations, getStartingHotel } from "@/lib/recommendations";
-import { bookingLink, getRoomCards, type RoomFilters } from "@/lib/room-listing";
+import { roomLink, getRoomCards, type RoomFilters } from "@/lib/room-listing";
 
 const MAX_RECOMMENDED_ROOMS = 6;
 
@@ -57,7 +57,7 @@ export async function RecommendedRooms({ filters }: { filters: RoomFilters }) {
             <RoomCard
               key={room.room_id}
               room={room}
-              bookHref={bookingLink(room.room_id, filters)}
+              bookHref={roomLink(room.room_id, filters)}
               recommended
             />
           ))}

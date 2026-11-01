@@ -86,19 +86,30 @@ export function parseFilters(
 }
 
 // Link to the booking page, carrying the search along
-export function bookingLink(roomId: string, filters: RoomFilters) {
+function searchQuery(filters: RoomFilters) {
   const params = new URLSearchParams();
   if (filters.checkIn && filters.checkOut) {
     params.set("check_in", filters.checkIn);
     params.set("check_out", filters.checkOut);
   }
   if (filters.guests) params.set("guests", String(filters.guests));
-  const query = params.toString();
+  return params.toString();
+}
+
+// Link to the booking page, carrying the search along
+export function bookingLink(roomId: string, filters: RoomFilters) {
+  const query = searchQuery(filters);
   return query ? `/book/${roomId}?${query}` : `/book/${roomId}`;
 }
 
+// Link to the room page, carrying the search along
+export function roomLink(roomId: string, filters: RoomFilters) {
+  const query = searchQuery(filters);
+  return query ? `/rooms/${roomId}?${query}` : `/rooms/${roomId}`;
+}
+
 // Average rating per room, from the reviews of that room's bookings
-async function getRatings(roomIds: string[]) {
+export async function getRatings(roomIds: string[]) {
   const ratings = new Map<string, { average: number; count: number }>();
   if (roomIds.length === 0) return ratings;
 

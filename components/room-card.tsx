@@ -14,18 +14,20 @@ export function RoomCard({
 }) {
   return (
     <article className="flex flex-col overflow-hidden rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10">
-      {room.coverPath ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={roomImageUrl(room.coverPath)}
-          alt={`${room.room_name} at ${room.hotel_name}`}
-          className="aspect-video w-full object-cover"
-        />
-      ) : (
-        <div className="flex aspect-video w-full items-center justify-center bg-muted text-sm text-muted-foreground">
-          No photo yet
-        </div>
-      )}
+      <Link href={bookHref} className="block">
+        {room.coverPath ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={roomImageUrl(room.coverPath)}
+            alt={`${room.room_name} at ${room.hotel_name}`}
+            className="aspect-video w-full object-cover"
+          />
+        ) : (
+          <div className="flex aspect-video w-full items-center justify-center bg-muted text-sm text-muted-foreground">
+            No photo yet
+          </div>
+        )}
+      </Link>
 
       <div className="flex flex-1 flex-col gap-1.5 p-4">
         {recommended && (
@@ -33,7 +35,11 @@ export function RoomCard({
             Recommended
           </span>
         )}
-        <h3 className="font-medium">{room.room_name}</h3>
+        <h3 className="font-medium">
+          <Link href={bookHref} className="hover:underline">
+            {room.room_name}
+          </Link>
+        </h3>
         <p className="text-sm text-muted-foreground">
           {room.hotel_name} · {room.room_type}
         </p>

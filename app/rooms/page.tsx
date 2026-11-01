@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { RoomCard } from "@/components/room-card";
 import {
-  bookingLink,
+  roomLink,
   getRoomCards,
   parseFilters,
   todayInMalaysia,
@@ -47,7 +47,7 @@ async function RoomsContent({ searchParams }: { searchParams: SearchParams }) {
               <RoomCard
                 key={room.room_id}
                 room={room}
-                bookHref={bookingLink(room.room_id, filters)}
+                bookHref={roomLink(room.room_id, filters)}
               />
             ))}
           </div>
