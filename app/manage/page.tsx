@@ -202,6 +202,7 @@ async function DashboardContent() {
     { href: "/manage/rooms", label: "Room listings" },
     { href: "/manage/bookings", label: "Bookings" },
     { href: "/manage/reports", label: "Generate report" },
+    { href: "/manage/hotel", label: "Hotel info" },
   ];
 
   return (
@@ -257,7 +258,7 @@ async function DashboardContent() {
 
       <section>
         <h3 className="mb-3 text-lg">Quick access</h3>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {quickLinks.map((link) => (
             <Link
               key={link.href}
