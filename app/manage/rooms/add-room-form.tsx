@@ -41,23 +41,27 @@ export function AddRoomForm() {
       return;
     }
 
-    let note = "Room added.";
     if (files.length > 0) {
       const uploadError = await uploadRoomImages(result.roomId, files);
       if (uploadError) {
-        note = `Room added, but the photos failed: ${uploadError} You can add them again from Edit.`;
+        // Stay on the page so the message is seen
+        form.reset();
+        setMessage(
+          `Room added, but the photos failed: ${uploadError} You can add them again from Edit.`
+        );
+        setPending(false);
+        router.refresh();
+        return;
       }
     }
 
-    form.reset();
-    setMessage(note);
-    setPending(false);
+    // Everything worked: back to the room list
+    router.push("/manage/rooms");
     router.refresh();
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mb-8 flex max-w-md flex-col gap-4">
-      <h3 className="text-lg font-medium">Add a room</h3>
+    <form onSubmit={handleSubmit} className="flex max-w-xl flex-col gap-4 rounded-xl bg-card p-5 ring-1 ring-foreground/10">
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="room_name">Room name</Label>

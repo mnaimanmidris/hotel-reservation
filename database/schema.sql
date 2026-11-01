@@ -357,3 +357,11 @@ create policy "update own profile" on users
   for update to authenticated
   using (user_id = (select auth.uid()))
   with check (user_id = (select auth.uid()));
+
+grant update (description, address, contact_email, contact_phone)
+  on public.hotels to authenticated;
+
+create policy "manager edits own hotel" on hotels
+  for update to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
