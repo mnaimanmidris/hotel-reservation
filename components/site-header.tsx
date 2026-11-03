@@ -1,6 +1,8 @@
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { siteConfig, type Role } from "@/lib/site-config";
+import { accentCss } from "@/lib/brand";
+import { getSettings } from "@/lib/settings";
 import { NavBar } from "@/components/nav-bar";
 
 export async function SiteHeader() {
@@ -20,22 +22,25 @@ export async function SiteHeader() {
     role = profile?.role === "hotel_management" ? "hotel_management" : "customer";
   }
 
+  const settings = await getSettings();
+  const name = String(settings["brand.name"]);
+  const css = accentCss(String(settings["brand.accent"]));
   const isAdmin = role === "hotel_management";
+
   return (
-    <NavBar
-      brand={isAdmin ? `${siteConfig.name} ${siteConfig.adminSuffix}` : siteConfig.name}
-      homeHref={isAdmin ? "/manage" : "/"}
-      items={siteConfig.nav[role]}
-      signedIn={role !== "guest"}
-    />
+    <>
+      {css && <style dangerouslySetInnerHTML={{ __html: css }} />}
+      <NavBar
+        brand={isAdmin ? `${name} ${siteConfig.adminSuffix}` : name}
+        homeHref={isAdmin ? "/manage" : "/"}
+        items={siteConfig.nav[role]}
+        signedIn={role !== "guest"}
+      />
+    </>
   );
 }
 
 // Shown while the header loads, so the bar never jumps
 export function SiteHeaderFallback() {
-  return (
-    <div className="mx-auto flex h-16 max-w-6xl items-center px-4 sm:px-8">
-      <span className="text-lg font-semibold">{siteConfig.name}</span>
-    </div>
-  );
+  return <div className="mx-auto h-16 max-w-6xl px-4 sm:px-8" />;
 }

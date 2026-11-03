@@ -21,6 +21,7 @@ export const siteConfig = {
       { href: "/manage/bookings", label: "Bookings" },
       { href: "/manage/rooms", label: "Rooms" },
       { href: "/manage/reports", label: "Reports" },
+      { href: "/manage/settings", label: "Settings" },
     ],
   } satisfies Record<Role, NavItem[]>,
 };

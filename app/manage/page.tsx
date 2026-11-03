@@ -203,6 +203,7 @@ async function DashboardContent() {
     { href: "/manage/bookings", label: "Bookings" },
     { href: "/manage/reports", label: "Generate report" },
     { href: "/manage/hotel", label: "Hotel info" },
+    { href: "/manage/settings", label: "Settings" },
   ];
 
   return (

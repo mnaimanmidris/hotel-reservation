@@ -365,3 +365,89 @@ create policy "manager edits own hotel" on hotels
   for update to authenticated
   using (user_id = (select auth.uid()))
   with check (user_id = (select auth.uid()));
+
+alter table users drop constraint users_role_check;
+alter table users add constraint users_role_check
+  check (role in ('customer', 'hotel_management', 'system_admin'));
+
+create table site_settings (
+    key text primary key,
+    value jsonb not null,
+    edit_tier text not null default 'staff'
+      check (edit_tier in ('staff', 'pic')),
+    updated_by uuid references users(user_id),
+    updated_at timestamptz not null default now()
+);
+
+alter table site_settings enable row level security;
+
+grant select on public.site_settings to anon, authenticated;
+grant update (value, updated_by, updated_at) on public.site_settings to authenticated;
+
+create policy "public read site_settings" on site_settings
+  for select using (true);
+
+create policy "staff edit staff settings" on site_settings
+  for update to authenticated
+  using (
+    edit_tier = 'staff'
+    and exists (
+      select 1 from users u
+      where u.user_id = (select auth.uid())
+        and u.role in ('hotel_management', 'system_admin')
+    )
+  )
+  with check (
+    edit_tier = 'staff'
+    and exists (
+      select 1 from users u
+      where u.user_id = (select auth.uid())
+        and u.role in ('hotel_management', 'system_admin')
+    )
+  );
+
+create policy "pic edits all settings" on site_settings
+  for update to authenticated
+  using (
+    exists (
+      select 1 from users u
+      where u.user_id = (select auth.uid()) and u.role = 'system_admin'
+    )
+  )
+  with check (
+    exists (
+      select 1 from users u
+      where u.user_id = (select auth.uid()) and u.role = 'system_admin'
+    )
+  );
+
+insert into site_settings (key, value, edit_tier) values
+  ('brand.name', '"HotelReserve"', 'staff'),
+  ('brand.tagline', '"Find a room, book it and pay online."', 'staff'),
+  ('brand.accent', '"blue"', 'staff'),
+  ('security.password_min_length', '8', 'pic');
+
+create table audit_log (
+    log_id uuid primary key default gen_random_uuid(),
+    actor_id uuid references users(user_id),
+    action text not null,
+    target text,
+    old_value jsonb,
+    new_value jsonb,
+    created_at timestamptz not null default now()
+);
+
+alter table audit_log enable row level security;
+
+grant select on public.audit_log to authenticated;
+grant select, insert on public.audit_log to service_role;
+grant select, update on public.users to service_role;
+
+create policy "pic reads audit log" on audit_log
+  for select to authenticated
+  using (
+    exists (
+      select 1 from users u
+      where u.user_id = (select auth.uid()) and u.role = 'system_admin'
+    )
+  );
