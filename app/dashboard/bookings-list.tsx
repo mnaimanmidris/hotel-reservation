@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { FREE_CHANGE_DEADLINE_DAYS } from "@/lib/booking-rules";
+import { getFreeChangeDeadlineDays } from "@/lib/settings";
 import { BookingCard, type BookingRow } from "./booking-card";
 
 function Section({
@@ -57,12 +57,13 @@ export async function BookingsList({ userId }: { userId: string }) {
     (b) => b.booking_status === "confirmed" && b.check_out < today
   );
   const cancelled = bookings.filter((b) => b.booking_status === "cancelled");
+  const deadlineDays = await getFreeChangeDeadlineDays();
 
   return (
     <div>
       <p className="mb-6 text-sm text-muted-foreground">
         You can change dates, or cancel with an automatic refund, up to{" "}
-        {FREE_CHANGE_DEADLINE_DAYS} days before check-in. After that, a
+        {deadlineDays} day{deadlineDays === 1 ? "" : "s"} before check-in. After that, a
         cancellation must be approved by the hotel.
       </p>
       <Section

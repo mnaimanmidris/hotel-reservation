@@ -5,10 +5,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendBookingConfirmation } from "@/lib/email";
-import {
-  FREE_CHANGE_DEADLINE_DAYS,
-  withinFreeChangeWindow,
-} from "@/lib/booking-rules";
+import { withinFreeChangeWindow } from "@/lib/booking-rules";
+import { getFreeChangeDeadlineDays } from "@/lib/settings";
 import { getUnitsLeft } from "@/lib/availability";
 
 type EditState = { error: string } | null;
@@ -67,9 +65,10 @@ export async function updateBookingDates(
     return { error: "Booking not found." };
   }
 
-  if (!withinFreeChangeWindow(booking.check_in, today)) {
+  const deadlineDays = await getFreeChangeDeadlineDays();
+  if (!withinFreeChangeWindow(booking.check_in, today, deadlineDays)) {
     return {
-      error: `Dates can only be changed up to ${FREE_CHANGE_DEADLINE_DAYS} days before check-in.`,
+      error: `Dates can only be changed up to ${deadlineDays} days before check-in.`,
     };
   }
 

@@ -8,6 +8,7 @@ import {
   withinFreeChangeWindow,
 } from "@/lib/booking-rules";
 import { cancelAndRefund } from "@/lib/cancellation";
+import { getFreeChangeDeadlineDays } from "@/lib/settings";
 import { sendCancellationEmail } from "@/lib/email";
 
 type CancelState = { error?: string; message?: string } | null;
@@ -63,7 +64,8 @@ export async function requestCancellation(
   const total = nights * booking.rooms_booked * Number(booking.price_at_booking);
 
   // Rule 1: inside the free window, cancel and refund automatically
-  if (withinFreeChangeWindow(booking.check_in, today)) {
+  const deadlineDays = await getFreeChangeDeadlineDays();
+  if (withinFreeChangeWindow(booking.check_in, today, deadlineDays)) {
     const result = await cancelAndRefund(bookingId);
     if (!result.ok) {
       return { error: result.error };

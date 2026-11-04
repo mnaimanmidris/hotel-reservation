@@ -29,7 +29,7 @@ async function SettingsContent() {
 
   const values = await getSettings();
   const editable = SETTING_DEFS.filter(
-    (def) => def.group === "brand" && !def.managed
+    (def) => !def.managed
   );
   const toForm = (def: SettingDef): FormSetting => ({
     key: def.key,
@@ -43,7 +43,7 @@ async function SettingsContent() {
     max: def.max,
     choices: def.choices,
   });
-  const sections = ["Branding", "Home page", "Footer"].map((title) => ({
+  const sections = ["Branding", "Home page", "Footer", "Booking rules"].map((title) => ({
     title,
     settings: editable
       .filter((def) => (def.section ?? "Branding") === title)

@@ -572,3 +572,6 @@ alter policy "staff deletes site images" on storage.objects
 revoke update on public.users from service_role;
 
 commit;
+
+-- Booking rules setting (4 Nov 2026)
+insert into site_settings (key, value) values ('rules.free_change_deadline_days', '3');

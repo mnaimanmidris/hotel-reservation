@@ -1,10 +1,9 @@
-// Minutes an unpaid booking keeps the dates blocked
+// Minutes an unpaid booking keeps the dates blocked. Not a setting on purpose:
+// the Stripe payment page expires after 31 minutes, so the hold must stay longer.
 export const HOLD_MINUTES = 35;
 
-// Customers can change dates and cancel with an automatic refund up to this many
-// days before check-in. After that, a cancellation needs hotel approval.
-// Placeholder value, adjust it here. Future improvement: let each hotel set its own.
-export const FREE_CHANGE_DEADLINE_DAYS = 3;
+// The free change deadline (days before check-in) is a setting that hotel
+// management edits: see rules.free_change_deadline_days in lib/settings.ts
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -14,8 +13,12 @@ export function daysUntil(date: string, today: string) {
   );
 }
 
-export function withinFreeChangeWindow(checkIn: string, today: string) {
-  return daysUntil(checkIn, today) >= FREE_CHANGE_DEADLINE_DAYS;
+export function withinFreeChangeWindow(
+  checkIn: string,
+  today: string,
+  deadlineDays: number
+) {
+  return daysUntil(checkIn, today) >= deadlineDays;
 }
 
 // A request is still possible until the day before check-in

@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { FREE_CHANGE_DEADLINE_DAYS } from "@/lib/booking-rules";
+import { getFreeChangeDeadlineDays } from "@/lib/settings";
 import { getUnitsLeft } from "@/lib/availability";
 import { formatDate } from "@/lib/format-date";
 import { getRatings, parseFilters, todayInMalaysia } from "@/lib/room-listing";
@@ -57,6 +57,7 @@ async function RoomContent({
   searchParams: SearchParams;
 }) {
   await connection();
+  const deadlineDays = await getFreeChangeDeadlineDays();
   const { roomId } = await params;
   const filters = parseFilters(await searchParams);
 
@@ -249,8 +250,8 @@ async function RoomContent({
           {room.quantity > 1 ? ` · ${room.quantity} rooms of this type` : ""}
         </p>
         <p className="text-sm text-muted-foreground">
-          Free changes and cancellation up to {FREE_CHANGE_DEADLINE_DAYS} days before
-          check-in. After that, a cancellation needs the hotel's approval.
+          Free changes and cancellation up to {deadlineDays} day
+          {deadlineDays === 1 ? "" : "s"} before check-in. After that, a cancellation needs the hotel's approval.
         </p>
 
         {hotel?.description && <p className="text-sm">{hotel.description}</p>}

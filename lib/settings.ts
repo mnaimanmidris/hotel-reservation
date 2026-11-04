@@ -122,6 +122,18 @@ export const SETTING_DEFS: SettingDef[] = [
     default: "",
     max: 30,
   },
+  {
+    key: "rules.free_change_deadline_days",
+    group: "rules",
+    section: "Booking rules",
+    type: "number",
+    label: "Free change deadline (days before check-in)",
+    description:
+      "Customers can change dates, or cancel with an automatic refund, up to this many days before check-in. After that, a cancellation needs your approval, until the day before check-in. A new value applies to every booking from the moment you save.",
+    default: 3,
+    min: 1,
+    max: 30,
+  },
 ];
 
 // All settings with their saved values (the default when nothing is saved)
@@ -165,4 +177,11 @@ export function parseSettingValue(
     return { error: `must be a whole number from ${min} to ${max}.` };
   }
   return { value: number };
+}
+
+
+// Days before check-in up to which changes and cancellations are free
+export async function getFreeChangeDeadlineDays(): Promise<number> {
+  const settings = await getSettings();
+  return Number(settings["rules.free_change_deadline_days"]);
 }

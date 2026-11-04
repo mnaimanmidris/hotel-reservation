@@ -5,6 +5,7 @@ import {
   withinFreeChangeWindow,
 } from "@/lib/booking-rules";
 import { formatDate } from "@/lib/format-date";
+import { getFreeChangeDeadlineDays } from "@/lib/settings";
 import { coverImagePath, roomImageUrl } from "@/lib/room-image-url";
 import { CancelBookingButton } from "./cancel-booking-button";
 import { ReviewForm } from "./review-form";
@@ -74,7 +75,7 @@ function badgeFor(b: BookingRow, cancellation: Cancellation | null, today: strin
     : { label: "Upcoming", className: BLUE };
 }
 
-export function BookingCard({
+export async function BookingCard({
   booking: b,
   today,
 }: {
@@ -90,7 +91,8 @@ export function BookingCard({
 
   const upcoming = b.booking_status === "confirmed" && b.check_out >= today;
   const completed = b.booking_status === "confirmed" && b.check_out < today;
-  const free = withinFreeChangeWindow(b.check_in, today);
+  const deadlineDays = await getFreeChangeDeadlineDays();
+  const free = withinFreeChangeWindow(b.check_in, today, deadlineDays);
   const showChange = upcoming && !cancellation && free;
   const showCancel =
     upcoming && !cancellation && canRequestCancellation(b.check_in, today);
