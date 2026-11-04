@@ -12,6 +12,7 @@ export type FormSetting = {
   label: string;
   description?: string;
   type: "text" | "number" | "choice";
+  multiline?: boolean;
   value: string | number;
   required?: boolean;
   min?: number;
@@ -62,6 +63,16 @@ export function SettingsForm({ settings }: { settings: FormSetting[] }) {
               step="1"
               defaultValue={setting.value}
               required
+            />
+          ) : setting.multiline ? (
+            <textarea
+              id={setting.key}
+              name={setting.key}
+              rows={3}
+              maxLength={setting.max}
+              defaultValue={String(setting.value)}
+              required={setting.required}
+              className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30"
             />
           ) : (
             <Input

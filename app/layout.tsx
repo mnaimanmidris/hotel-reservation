@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import "./globals.css";
 import { siteConfig } from "@/lib/site-config";
 import { SiteHeader, SiteHeaderFallback } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,7 +39,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <SiteHeader />
           </Suspense>
         </header>
-        {children}
+        <div className="flex flex-1 flex-col">{children}</div>
+        <Suspense fallback={null}>
+          <SiteFooter />
+        </Suspense>
       </body>
     </html>
   );

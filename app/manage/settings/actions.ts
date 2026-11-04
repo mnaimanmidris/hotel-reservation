@@ -33,6 +33,7 @@ export async function saveSettings(
 
   for (const def of SETTING_DEFS) {
     if (!formData.has(def.key)) continue;
+    if (def.managed) continue;
     if (def.tier === "pic" && role !== "system_admin") continue;
 
     const parsed = parseSettingValue(def, String(formData.get(def.key) ?? ""));
@@ -81,4 +82,63 @@ export async function saveSettings(
 
   revalidatePath("/", "layout");
   return { message: "Settings saved." };
+}
+
+
+const HERO_PATH = /^hero\/[0-9a-f-]{36}\.(webp|jpg)$/;
+
+// Sets the banner picture (a path in the site-images bucket) or clears it with ""
+export async function setHeroImage(path: string): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  const userId = auth?.claims?.sub;
+  if (!userId) return { error: "Please log in again." };
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const role = profile?.role;
+  if (role !== "hotel_management" && role !== "system_admin") {
+    return { error: "You do not have access to these settings." };
+  }
+
+  if (path !== "" && !HERO_PATH.test(path)) {
+    return { error: "That picture path is not valid." };
+  }
+
+  const current = await getSettings();
+  const oldPath = String(current["brand.hero_image"]);
+  if (oldPath === path) return {};
+
+  const { data, error } = await supabase
+    .from("site_settings")
+    .update({
+      value: path,
+      updated_by: userId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("key", "brand.hero_image")
+    .select("key");
+  if (error || !data || data.length === 0) {
+    return { error: "Could not save the banner picture." };
+  }
+
+  const admin = createAdminClient();
+  const { error: logError } = await admin.from("audit_log").insert({
+    actor_id: userId,
+    action: "setting.update",
+    target: "brand.hero_image",
+    old_value: oldPath,
+    new_value: path,
+  });
+  if (logError) console.error("Audit log failed:", logError.message);
+
+  if (HERO_PATH.test(oldPath)) {
+    await supabase.storage.from("site-images").remove([oldPath]);
+  }
+
+  revalidatePath("/", "layout");
+  return {};
 }

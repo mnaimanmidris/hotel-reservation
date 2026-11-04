@@ -425,7 +425,15 @@ insert into site_settings (key, value, edit_tier) values
   ('brand.name', '"HotelReserve"', 'staff'),
   ('brand.tagline', '"Find a room, book it and pay online."', 'staff'),
   ('brand.accent', '"blue"', 'staff'),
-  ('security.password_min_length', '8', 'pic');
+  ('security.password_min_length', '8', 'pic'),
+  ('home.reason1_title', '"Secure online payment"', 'staff'),
+  ('home.reason1_text', '"Pay online when you book, through Stripe''s secure checkout."', 'staff'),
+  ('home.reason2_title', '"Free changes before the deadline"', 'staff'),
+  ('home.reason2_text', '"Registered guests can change their dates or cancel for a refund inside the free change window."', 'staff'),
+  ('home.reason3_title', '"Reviews from real stays"', 'staff'),
+  ('home.reason3_text', '"Only guests who have completed a stay can write a review."', 'staff'),
+  ('footer.contact_email', '""', 'staff'),
+  ('footer.contact_phone', '""', 'staff');
 
 create table audit_log (
     log_id uuid primary key default gen_random_uuid(),
@@ -451,3 +459,46 @@ create policy "pic reads audit log" on audit_log
       where u.user_id = (select auth.uid()) and u.role = 'system_admin'
     )
   );
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'site-images', 'site-images', true, 2097152,
+  array['image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do nothing;
+
+create policy "staff reads site images" on storage.objects
+  for select to authenticated
+  using (
+    bucket_id = 'site-images'
+    and exists (
+      select 1 from public.users u
+      where u.user_id = (select auth.uid())
+        and u.role in ('hotel_management', 'system_admin')
+    )
+  );
+
+create policy "staff uploads site images" on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'site-images'
+    and exists (
+      select 1 from public.users u
+      where u.user_id = (select auth.uid())
+        and u.role in ('hotel_management', 'system_admin')
+    )
+  );
+
+create policy "staff deletes site images" on storage.objects
+  for delete to authenticated
+  using (
+    bucket_id = 'site-images'
+    and exists (
+      select 1 from public.users u
+      where u.user_id = (select auth.uid())
+        and u.role in ('hotel_management', 'system_admin')
+    )
+  );
+
+insert into site_settings (key, value, edit_tier)
+values ('brand.hero_image', '""', 'staff');

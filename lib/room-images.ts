@@ -12,9 +12,12 @@ async function toBlob(canvas: HTMLCanvasElement, type: string) {
   );
 }
 
-async function compressImage(file: File): Promise<Blob> {
+export async function compressImage(
+  file: File,
+  maxSide: number = MAX_SIDE
+): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(bitmap.width * scale);
   canvas.height = Math.round(bitmap.height * scale);

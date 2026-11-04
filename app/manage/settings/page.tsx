@@ -2,8 +2,9 @@ import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { SETTING_DEFS, getSettings } from "@/lib/settings";
+import { SETTING_DEFS, getSettings, type SettingDef } from "@/lib/settings";
 import { SettingsForm, type FormSetting } from "@/components/settings-form";
+import { HeroImageEditor } from "@/components/hero-image-editor";
 
 export const metadata = { title: "Settings" };
 
@@ -27,10 +28,12 @@ async function SettingsContent() {
   }
 
   const values = await getSettings();
-  const branding: FormSetting[] = SETTING_DEFS.filter(
-    (def) => def.group === "brand" && def.tier === "staff"
-  ).map((def) => ({
+  const editable = SETTING_DEFS.filter(
+    (def) => def.group === "brand" && def.tier === "staff" && !def.managed
+  );
+  const toForm = (def: SettingDef): FormSetting => ({
     key: def.key,
+    multiline: def.multiline,
     label: def.label,
     description: def.description,
     type: def.type,
@@ -39,13 +42,29 @@ async function SettingsContent() {
     min: def.min,
     max: def.max,
     choices: def.choices,
+  });
+  const sections = ["Branding", "Home page", "Footer"].map((title) => ({
+    title,
+    settings: editable
+      .filter((def) => (def.section ?? "Branding") === title)
+      .map(toForm),
   }));
 
   return (
-    <section className="flex max-w-xl flex-col gap-4 rounded-xl bg-card p-5 ring-1 ring-foreground/10">
-      <h2 className="text-lg font-medium">Branding</h2>
-      <SettingsForm settings={branding} />
-    </section>
+    <div className="flex flex-col gap-6">
+      {sections.map((section) => (
+        <section
+          key={section.title}
+          className="flex max-w-xl flex-col gap-4 rounded-xl bg-card p-5 ring-1 ring-foreground/10"
+        >
+          <h2 className="text-lg font-medium">{section.title}</h2>
+          {section.title === "Home page" && (
+            <HeroImageEditor path={String(values["brand.hero_image"])} />
+          )}
+          <SettingsForm settings={section.settings} />
+        </section>
+      ))}
+    </div>
   );
 }
 
