@@ -134,6 +134,44 @@ export const SETTING_DEFS: SettingDef[] = [
     min: 1,
     max: 30,
   },
+  {
+    key: "rules.member_min_stays",
+    group: "rules",
+    section: "Booking rules",
+    type: "number",
+    label: "Completed stays needed for the member discount",
+    description:
+      "A registered customer earns the member discount after this many completed stays at your hotel in the last 12 months. Cancelled bookings do not count.",
+    default: 3,
+    min: 1,
+    max: 50,
+  },
+  {
+    key: "rules.member_discount_percent",
+    group: "rules",
+    section: "Booking rules",
+    type: "number",
+    label: "Member discount (%)",
+    description:
+      "Taken off the room price for customers who earned it. Enter 0 to turn the member discount off.",
+    default: 0,
+    min: 0,
+    max: 50,
+  },
+  {
+    key: "rules.discount_stacking",
+    group: "rules",
+    section: "Booking rules",
+    type: "choice",
+    label: "When a booking qualifies for more than one discount",
+    description:
+      "Best one only: the largest saving applies. Combine all: the member discount and every promo code the customer enters are added together.",
+    default: "best",
+    choices: [
+      { value: "best", label: "Best one only" },
+      { value: "combine", label: "Combine all" },
+    ],
+  },
 ];
 
 // All settings with their saved values (the default when nothing is saved)

@@ -573,10 +573,86 @@ revoke update on public.users from service_role;
 
 commit;
 
--- Booking rules setting (4 Nov 2026)
+-- Booking rules setting
 insert into site_settings (key, value) values ('rules.free_change_deadline_days', '3');
 
--- Discount columns on bookings (4 Nov 2026)
+-- Discount columns on bookings
 alter table bookings
   add column discount_amount numeric(10,2) not null default 0 check (discount_amount >= 0),
   add column discount_label text;
+
+-- Promo codes and member discount settings
+create table promo_codes (
+  promo_code_id uuid primary key default gen_random_uuid(),
+  hotel_id uuid not null references hotels(hotel_id) on delete cascade,
+  code text not null check (code ~ '^[A-Z0-9-]{3,20}$'),
+  discount_type text not null check (discount_type in ('percent', 'fixed')),
+  discount_value numeric(10,2) not null check (discount_value > 0),
+  valid_from date,
+  valid_until date,
+  max_uses integer check (max_uses > 0),
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  constraint promo_codes_percent_max
+    check (discount_type <> 'percent' or discount_value <= 100),
+  constraint promo_codes_dates
+    check (valid_from is null or valid_until is null or valid_until >= valid_from),
+  constraint promo_codes_hotel_code_unique unique (hotel_id, code)
+);
+
+alter table promo_codes enable row level security;
+
+grant select, insert, update, delete on public.promo_codes to authenticated;
+grant select on public.promo_codes to service_role;
+
+create policy "manager reads own promo codes" on promo_codes
+  for select to authenticated
+  using (
+    exists (
+      select 1 from hotels h
+      where h.hotel_id = promo_codes.hotel_id
+        and h.user_id = (select auth.uid())
+    )
+  );
+
+create policy "manager adds promo codes to own hotel" on promo_codes
+  for insert to authenticated
+  with check (
+    exists (
+      select 1 from hotels h
+      where h.hotel_id = promo_codes.hotel_id
+        and h.user_id = (select auth.uid())
+    )
+  );
+
+create policy "manager edits promo codes of own hotel" on promo_codes
+  for update to authenticated
+  using (
+    exists (
+      select 1 from hotels h
+      where h.hotel_id = promo_codes.hotel_id
+        and h.user_id = (select auth.uid())
+    )
+  )
+  with check (
+    exists (
+      select 1 from hotels h
+      where h.hotel_id = promo_codes.hotel_id
+        and h.user_id = (select auth.uid())
+    )
+  );
+
+create policy "manager deletes promo codes of own hotel" on promo_codes
+  for delete to authenticated
+  using (
+    exists (
+      select 1 from hotels h
+      where h.hotel_id = promo_codes.hotel_id
+        and h.user_id = (select auth.uid())
+    )
+  );
+
+insert into site_settings (key, value) values
+  ('rules.member_min_stays', '3'),
+  ('rules.member_discount_percent', '0'),
+  ('rules.discount_stacking', '"best"');

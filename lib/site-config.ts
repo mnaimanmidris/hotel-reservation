@@ -20,6 +20,7 @@ export const siteConfig = {
       { href: "/manage", label: "Dashboard" },
       { href: "/manage/bookings", label: "Bookings" },
       { href: "/manage/rooms", label: "Rooms" },
+      { href: "/manage/promo-codes", label: "Promo codes" },
       { href: "/manage/reports", label: "Reports" },
       { href: "/manage/settings", label: "Settings" },
     ],
