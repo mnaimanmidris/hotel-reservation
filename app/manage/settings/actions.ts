@@ -34,7 +34,6 @@ export async function saveSettings(
   for (const def of SETTING_DEFS) {
     if (!formData.has(def.key)) continue;
     if (def.managed) continue;
-    if (def.tier === "pic" && role !== "system_admin") continue;
 
     const parsed = parseSettingValue(def, String(formData.get(def.key) ?? ""));
     if ("error" in parsed) {

@@ -6,9 +6,8 @@ import { ACCENTS } from "@/lib/brand";
 
 export type SettingDef = {
   key: string;
-  group: "brand" | "rules" | "security";
+  group: "brand" | "rules";
   section?: string;
-  tier: "staff" | "pic";
   type: "text" | "number" | "choice";
   multiline?: boolean;
   // Changed only by its own control, never by the generic settings form
@@ -29,7 +28,6 @@ function homeReason(n: number, title: string, text: string): SettingDef[] {
       key: `home.reason${n}_title`,
       group: "brand",
       section: "Home page",
-      tier: "staff",
       type: "text",
       label: `Reason ${n} title`,
       description: "Leave the title empty to hide this reason.",
@@ -40,7 +38,6 @@ function homeReason(n: number, title: string, text: string): SettingDef[] {
       key: `home.reason${n}_text`,
       group: "brand",
       section: "Home page",
-      tier: "staff",
       type: "text",
       multiline: true,
       label: `Reason ${n} text`,
@@ -56,7 +53,6 @@ export const SETTING_DEFS: SettingDef[] = [
   {
     key: "brand.name",
     group: "brand",
-    tier: "staff",
     type: "text",
     label: "Site name",
     description: "Shown in the header and on the home page.",
@@ -67,7 +63,6 @@ export const SETTING_DEFS: SettingDef[] = [
   {
     key: "brand.tagline",
     group: "brand",
-    tier: "staff",
     type: "text",
     label: "Tagline",
     description: "The short line under the name on the home page.",
@@ -77,7 +72,6 @@ export const SETTING_DEFS: SettingDef[] = [
   {
     key: "brand.accent",
     group: "brand",
-    tier: "staff",
     type: "choice",
     label: "Accent colour",
     description: "Used for buttons, links and highlights.",
@@ -88,7 +82,6 @@ export const SETTING_DEFS: SettingDef[] = [
     key: "brand.hero_image",
     group: "brand",
     section: "Home page",
-    tier: "staff",
     type: "text",
     managed: true,
     label: "Banner picture",
@@ -113,7 +106,6 @@ export const SETTING_DEFS: SettingDef[] = [
     key: "footer.contact_email",
     group: "brand",
     section: "Footer",
-    tier: "staff",
     type: "text",
     label: "Contact email",
     description: "Shown in the footer. Leave empty to hide it.",
@@ -124,22 +116,11 @@ export const SETTING_DEFS: SettingDef[] = [
     key: "footer.contact_phone",
     group: "brand",
     section: "Footer",
-    tier: "staff",
     type: "text",
     label: "Contact phone",
     description: "Shown in the footer. Leave empty to hide it.",
     default: "",
     max: 30,
-  },
-  {
-    key: "security.password_min_length",
-    group: "security",
-    tier: "pic",
-    type: "number",
-    label: "Minimum password length",
-    default: 8,
-    min: 6,
-    max: 64,
   },
 ];
 

@@ -29,7 +29,7 @@ async function SettingsContent() {
 
   const values = await getSettings();
   const editable = SETTING_DEFS.filter(
-    (def) => def.group === "brand" && def.tier === "staff" && !def.managed
+    (def) => def.group === "brand" && !def.managed
   );
   const toForm = (def: SettingDef): FormSetting => ({
     key: def.key,

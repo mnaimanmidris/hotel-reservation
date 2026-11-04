@@ -502,3 +502,73 @@ create policy "staff deletes site images" on storage.objects
 
 insert into site_settings (key, value, edit_tier)
 values ('brand.hero_image', '""', 'staff');
+
+-- Removal of system_admin and the PIC (4 Nov 2026)
+begin;
+
+-- 1. PIC test account becomes a normal customer
+update users set role = 'customer' where role = 'system_admin';
+
+-- 2. Back to two roles
+alter table users drop constraint users_role_check;
+alter table users add constraint users_role_check
+  check (role in ('customer', 'hotel_management'));
+
+-- 3. Policies that only existed for the PIC
+drop policy "pic edits all settings" on site_settings;
+drop policy "pic reads audit log" on audit_log;
+
+-- 4. Settings: hotel management only, no tiers
+delete from site_settings where key = 'security.password_min_length';
+
+alter policy "staff edit staff settings" on site_settings
+  using (
+    exists (
+      select 1 from public.users u
+      where u.user_id = (select auth.uid()) and u.role = 'hotel_management'
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.users u
+      where u.user_id = (select auth.uid()) and u.role = 'hotel_management'
+    )
+  );
+
+alter table site_settings drop column edit_tier;
+
+alter policy "staff edit staff settings" on site_settings
+  rename to "hotel management edits settings";
+
+-- 5. Site images: hotel management only
+alter policy "staff reads site images" on storage.objects
+  using (
+    bucket_id = 'site-images'
+    and exists (
+      select 1 from public.users u
+      where u.user_id = (select auth.uid()) and u.role = 'hotel_management'
+    )
+  );
+
+alter policy "staff uploads site images" on storage.objects
+  with check (
+    bucket_id = 'site-images'
+    and exists (
+      select 1 from public.users u
+      where u.user_id = (select auth.uid()) and u.role = 'hotel_management'
+    )
+  );
+
+alter policy "staff deletes site images" on storage.objects
+  using (
+    bucket_id = 'site-images'
+    and exists (
+      select 1 from public.users u
+      where u.user_id = (select auth.uid()) and u.role = 'hotel_management'
+    )
+  );
+
+-- 6. The server role no longer needs to update users (that grant was for the PIC)
+revoke update on public.users from service_role;
+
+commit;
