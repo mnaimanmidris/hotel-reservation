@@ -3,12 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getManagerContext } from "@/lib/manager";
+import { bookingTotal } from "@/lib/booking-total";
 import { cancelAndRefund } from "@/lib/cancellation";
 import { sendCancellationEmail } from "@/lib/email";
 
 type ActionState = { error?: string; message?: string } | null;
-
-const DAY = 24 * 60 * 60 * 1000;
 
 // A confirmed booking of this hotel that has a pending cancellation request
 async function loadPendingRequest(bookingId: string, hotelId: string) {
@@ -16,7 +15,7 @@ async function loadPendingRequest(bookingId: string, hotelId: string) {
   const { data } = await admin
     .from("bookings")
     .select(
-      "booking_id, check_in, check_out, price_at_booking, rooms_booked, rooms!inner(hotel_id), cancellations!inner(approval_status)"
+      "booking_id, check_in, check_out, price_at_booking, discount_amount, rooms_booked, rooms!inner(hotel_id), cancellations!inner(approval_status)"
     )
     .eq("booking_id", bookingId)
     .eq("rooms.hotel_id", hotelId)
@@ -88,17 +87,8 @@ export async function rejectCancellation(
     return { error: "Could not reject the request. Please try again." };
   }
 
-  const nights = Math.round(
-    (new Date(request.check_out).getTime() -
-      new Date(request.check_in).getTime()) /
-      DAY
-  );
   try {
-    await sendCancellationEmail(
-      bookingId,
-      nights * request.rooms_booked * Number(request.price_at_booking),
-      "rejected"
-    );
+    await sendCancellationEmail(bookingId, bookingTotal(request), "rejected");
   } catch (err) {
     console.error("Rejection email failed:", err);
   }

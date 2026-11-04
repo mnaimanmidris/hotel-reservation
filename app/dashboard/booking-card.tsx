@@ -4,6 +4,7 @@ import {
   canRequestCancellation,
   withinFreeChangeWindow,
 } from "@/lib/booking-rules";
+import { bookingTotal } from "@/lib/booking-total";
 import { formatDate } from "@/lib/format-date";
 import { getFreeChangeDeadlineDays } from "@/lib/settings";
 import { coverImagePath, roomImageUrl } from "@/lib/room-image-url";
@@ -22,6 +23,8 @@ export type BookingRow = {
   check_in: string;
   check_out: string;
   price_at_booking: number;
+  discount_amount: number | null;
+  discount_label: string | null;
   rooms_booked: number;
   guests: number;
   booking_status: string;
@@ -87,7 +90,7 @@ export async function BookingCard({
   const review = reviewOf(b);
   const badge = badgeFor(b, cancellation, today);
   const cover = coverImagePath(b.rooms?.room_images ?? null);
-  const total = nights * b.rooms_booked * Number(b.price_at_booking);
+  const total = bookingTotal(b);
 
   const upcoming = b.booking_status === "confirmed" && b.check_out >= today;
   const completed = b.booking_status === "confirmed" && b.check_out < today;
@@ -157,9 +160,17 @@ export async function BookingCard({
         </div>
       </div>
 
-      <p className="text-lg font-semibold text-primary sm:text-right">
-        RM {total.toFixed(2)}
-      </p>
+      <div className="sm:text-right">
+        <p className="text-lg font-semibold text-primary">
+          RM {total.toFixed(2)}
+        </p>
+        {Number(b.discount_amount) > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {b.discount_label || "Discount"}: -RM{" "}
+            {Number(b.discount_amount).toFixed(2)}
+          </p>
+        )}
+      </div>
     </article>
   );
 }

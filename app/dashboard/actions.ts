@@ -7,13 +7,13 @@ import {
   canRequestCancellation,
   withinFreeChangeWindow,
 } from "@/lib/booking-rules";
+import { bookingTotal } from "@/lib/booking-total";
 import { cancelAndRefund } from "@/lib/cancellation";
 import { getFreeChangeDeadlineDays } from "@/lib/settings";
 import { sendCancellationEmail } from "@/lib/email";
 
 type CancelState = { error?: string; message?: string } | null;
 
-const DAY = 24 * 60 * 60 * 1000;
 
 export async function requestCancellation(
   _prevState: CancelState,
@@ -31,7 +31,7 @@ export async function requestCancellation(
   const admin = createAdminClient();
   const { data: booking } = await admin
     .from("bookings")
-    .select("booking_id, check_in, check_out, price_at_booking, rooms_booked, booking_status")
+    .select("booking_id, check_in, check_out, price_at_booking, discount_amount, rooms_booked, booking_status")
     .eq("booking_id", bookingId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -56,12 +56,7 @@ export async function requestCancellation(
     return { error: "A cancellation request already exists for this booking." };
   }
 
-  const nights = Math.round(
-    (new Date(booking.check_out).getTime() -
-      new Date(booking.check_in).getTime()) /
-      DAY
-  );
-  const total = nights * booking.rooms_booked * Number(booking.price_at_booking);
+  const total = bookingTotal(booking);
 
   // Rule 1: inside the free window, cancel and refund automatically
   const deadlineDays = await getFreeChangeDeadlineDays();

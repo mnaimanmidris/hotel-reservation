@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getManagerContext } from "@/lib/manager";
 import { sendBookingConfirmation } from "@/lib/email";
+import { bookingTotal } from "@/lib/booking-total";
 import { getUnitsLeft } from "@/lib/availability";
 
 type EditState = { error: string } | null;
@@ -51,7 +52,7 @@ export async function updateBookingDatesByHotel(
   const { data: booking } = await admin
     .from("bookings")
     .select(
-      "booking_id, room_id, guest_email, check_in, check_out, price_at_booking, rooms_booked, rooms!inner(hotel_id)"
+      "booking_id, room_id, guest_email, check_in, check_out, price_at_booking, discount_amount, rooms_booked, rooms!inner(hotel_id)"
     )
     .eq("booking_id", bookingId)
     .eq("rooms.hotel_id", manager.hotelId)
@@ -121,7 +122,7 @@ export async function updateBookingDatesByHotel(
   try {
     await sendBookingConfirmation(
       bookingId,
-      newNights * booking.rooms_booked * Number(booking.price_at_booking),
+      bookingTotal({ ...booking, check_in: checkIn, check_out: checkOut }),
       "updated"
     );
   } catch (err) {

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendBookingConfirmation } from "@/lib/email";
+import { bookingTotal } from "@/lib/booking-total";
 import { withinFreeChangeWindow } from "@/lib/booking-rules";
 import { getFreeChangeDeadlineDays } from "@/lib/settings";
 import { getUnitsLeft } from "@/lib/availability";
@@ -55,7 +56,7 @@ export async function updateBookingDates(
   const { data: booking } = await admin
     .from("bookings")
     .select(
-      "booking_id, room_id, guest_email, check_in, check_out, price_at_booking, rooms_booked, booking_status"
+      "booking_id, room_id, guest_email, check_in, check_out, price_at_booking, discount_amount, rooms_booked, booking_status"
     )
     .eq("booking_id", bookingId)
     .eq("user_id", userId)
@@ -124,7 +125,7 @@ export async function updateBookingDates(
   try {
     await sendBookingConfirmation(
       bookingId,
-      newNights * Number(booking.price_at_booking),
+      bookingTotal({ ...booking, check_in: checkIn, check_out: checkOut }),
       "updated"
     );
   } catch (err) {

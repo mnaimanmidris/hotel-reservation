@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { bookingTotal } from "@/lib/booking-total";
 import { RequestActions } from "./request-actions";
 import { HotelCancelButton } from "./hotel-cancel-button";
 
@@ -18,6 +19,8 @@ type BookingRow = {
   check_in: string;
   check_out: string;
   price_at_booking: number;
+  discount_amount: number | null;
+  discount_label: string | null;
   rooms_booked: number;
   booking_status: string;
   rooms: { room_name: string; hotel_id: string } | null;
@@ -97,7 +100,7 @@ async function ManageBookings({
   const { data, error } = await admin
     .from("bookings")
     .select(
-      "booking_id, user_id, guest_name, guest_email, guest_phone, check_in, check_out, price_at_booking, rooms_booked, booking_status, rooms!inner(room_name, hotel_id), cancellations(approval_status, refund_status)"
+      "booking_id, user_id, guest_name, guest_email, guest_phone, check_in, check_out, price_at_booking, discount_amount, discount_label, rooms_booked, booking_status, rooms!inner(room_name, hotel_id)"
     )
     .eq("rooms.hotel_id", hotel.hotel_id)
     .in("booking_status", ["confirmed", "cancelled"])
@@ -176,7 +179,12 @@ async function ManageBookings({
                     <td className="py-2 pr-6">{b.check_out}</td>
                     <td className="py-2 pr-6">{nights}</td>
                     <td className="py-2 pr-6">
-                      {(nights * b.rooms_booked * Number(b.price_at_booking)).toFixed(2)}
+                      {bookingTotal(b).toFixed(2)}
+                      {Number(b.discount_amount) > 0 && (
+                        <div className="text-xs text-muted-foreground">
+                          {b.discount_label || "Discount"}
+                        </div>
+                      )}
                     </td>
                     <td className="py-2 pr-6">
                       {b.user_id ? "Registered" : "Guest"}

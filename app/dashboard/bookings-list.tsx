@@ -34,7 +34,7 @@ export async function BookingsList({ userId }: { userId: string }) {
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "booking_id, check_in, check_out, price_at_booking, rooms_booked, guests, booking_status, rooms(room_name, hotels(hotel_name), room_images(image_path, sort_order)), cancellations(approval_status, refund_status), reviews(review_id, rating, review_text)"
+      "booking_id, check_in, check_out, price_at_booking, discount_amount, discount_label, rooms_booked, guests, booking_status, rooms(room_name, hotels(hotel_name), room_images(image_path, sort_order)), cancellations(approval_status, refund_status), reviews(review_id, rating, review_text)"
     )
     .eq("user_id", userId)
     .in("booking_status", ["confirmed", "cancelled"])

@@ -88,7 +88,7 @@ export async function sendCancellationEmail(
   const { data, error } = await admin
     .from("bookings")
     .select(
-      "booking_id, guest_name, guest_email, check_in, check_out, price_at_booking, rooms(room_name, hotels(hotel_name))"
+      "booking_id, guest_name, guest_email, check_in, check_out, price_at_booking, rooms_booked, rooms(room_name, hotels(hotel_name))"
     )
     .eq("booking_id", bookingId)
     .single();

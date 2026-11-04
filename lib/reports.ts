@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { bookingTotal } from "@/lib/booking-total";
 
 const DAY = 24 * 60 * 60 * 1000;
 const dateFormat = /^\d{4}-\d{2}-\d{2}$/;
@@ -16,6 +17,7 @@ type BookingRow = {
   check_in: string;
   check_out: string;
   price_at_booking: number;
+  discount_amount: number | null;
   rooms_booked: number;
   booking_status: string;
   rooms: { room_name: string } | null;
@@ -92,7 +94,7 @@ export async function getReportData(
   const { data, error } = await admin
     .from("bookings")
     .select(
-      "booking_id, user_id, guest_name, guest_email, guest_phone, check_in, check_out, price_at_booking, rooms_booked, booking_status, rooms!inner(room_name, hotel_id), payments(amount, payment_status), cancellations(approval_status)"
+      "booking_id, user_id, guest_name, guest_email, guest_phone, check_in, check_out, price_at_booking, discount_amount, rooms_booked, booking_status, rooms!inner(room_name, hotel_id), payments(amount, payment_status), cancellations(approval_status)"
     )
     .eq("rooms.hotel_id", hotelId)
     .in("booking_status", ["confirmed", "cancelled"])
@@ -168,7 +170,7 @@ export async function getReportData(
       checkIn: b.check_in,
       checkOut: b.check_out,
       nights: n,
-      total: n * Number(b.price_at_booking),
+      total: bookingTotal(b),
       status,
       bookedAs: b.user_id ? "Registered" : "Guest",
       paymentStatus: payment?.payment_status ?? "",

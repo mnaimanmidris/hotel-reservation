@@ -575,3 +575,8 @@ commit;
 
 -- Booking rules setting (4 Nov 2026)
 insert into site_settings (key, value) values ('rules.free_change_deadline_days', '3');
+
+-- Discount columns on bookings (4 Nov 2026)
+alter table bookings
+  add column discount_amount numeric(10,2) not null default 0 check (discount_amount >= 0),
+  add column discount_label text;
