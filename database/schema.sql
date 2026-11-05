@@ -656,3 +656,18 @@ insert into site_settings (key, value) values
   ('rules.member_min_stays', '3'),
   ('rules.member_discount_percent', '0'),
   ('rules.discount_stacking', '"best"');
+
+-- Promo codes used by a booking
+create table booking_promo_codes (
+  booking_id uuid not null references bookings(booking_id) on delete cascade,
+  promo_code_id uuid references promo_codes(promo_code_id) on delete set null,
+  code text not null,
+  amount numeric(10,2) not null check (amount >= 0),
+  primary key (booking_id, code)
+);
+
+create index booking_promo_codes_promo_idx on booking_promo_codes (promo_code_id);
+
+alter table booking_promo_codes enable row level security;
+
+grant select, insert, delete on public.booking_promo_codes to service_role;

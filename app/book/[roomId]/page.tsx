@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { coverImagePath } from "@/lib/room-image-url";
 import { todayInMalaysia } from "@/lib/room-listing";
+import { getSettings } from "@/lib/settings";
 import { BookingForm } from "./booking-form";
 
 type Room = {
@@ -53,6 +54,8 @@ async function BookRoom({
     return <p>This room is not available.</p>;
   }
 
+  const settings = await getSettings();
+
   const { data: profile } = userId
     ? await supabase
         .from("users")
@@ -75,6 +78,7 @@ async function BookRoom({
     <BookingForm
       roomId={room.room_id}
       today={todayInMalaysia()}
+      stacking={settings["rules.discount_stacking"] === "combine" ? "combine" : "best"}
       room={{
         name: room.room_name,
         hotelName: room.hotels?.hotel_name ?? "",

@@ -2,6 +2,10 @@
 // the Stripe payment page expires after 31 minutes, so the hold must stay longer.
 export const HOLD_MINUTES = 35;
 
+// Smallest amount Stripe accepts for one payment in MYR (RM 2, from Stripe's
+// currency documentation). A discount never takes a booking below this.
+export const MIN_CHARGE = 2;
+
 // The free change deadline (days before check-in) is a setting that hotel
 // management edits: see rules.free_change_deadline_days in lib/settings.ts
 

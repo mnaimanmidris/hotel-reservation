@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { buttonVariants } from "@/components/ui/button";
+import { getPromoUses } from "@/lib/discounts";
 import { DeletePromoButton, TogglePromoButton } from "./promo-code-buttons";
 
 export const metadata = { title: "Promo codes" };
@@ -75,6 +76,7 @@ async function ManagePromoCodes() {
   }
 
   const promos = (data ?? []) as PromoRow[];
+  const uses = await getPromoUses(promos.map((p) => p.promo_code_id));
 
   return (
     <div className="flex flex-col gap-6">
@@ -111,7 +113,9 @@ async function ManagePromoCodes() {
                 <p className="text-sm">{discountText(p)}</p>
                 <p className="text-xs text-muted-foreground">
                   {validityText(p)}
-                  {p.max_uses ? ` · at most ${p.max_uses} uses` : " · no use limit"}
+                  {p.max_uses
+                    ? ` · used ${uses.get(p.promo_code_id) ?? 0} of ${p.max_uses}`
+                    : ` · used ${uses.get(p.promo_code_id) ?? 0} times, no limit`}
                 </p>
               </div>
 

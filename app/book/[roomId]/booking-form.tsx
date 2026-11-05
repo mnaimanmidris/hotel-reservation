@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { startBooking } from "./actions";
+import { useActionState, useEffect, useState } from "react";
+import { previewDiscount, startBooking } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { DiscountPreview } from "@/lib/discount-types";
 import { roomImageUrl } from "@/lib/room-image-url";
 import { submitKeepingValues } from "@/lib/submit-keep-values";
 
@@ -51,17 +52,21 @@ export function BookingForm({
   room,
   initial,
   defaults,
+  stacking,
 }: {
   roomId: string;
   today: string;
   room: RoomInfo;
   initial: Initial;
   defaults: Defaults;
+  stacking: "best" | "combine";
 }) {
   const [state, formAction, pending] = useActionState(startBooking, null);
   const [checkIn, setCheckIn] = useState(initial.checkIn);
   const [checkOut, setCheckOut] = useState(initial.checkOut);
   const [guests, setGuests] = useState(String(initial.guests));
+  const [codes, setCodes] = useState("");
+  const [preview, setPreview] = useState<DiscountPreview | null>(null);
 
   const nights =
     checkIn && checkOut && checkOut > checkIn
@@ -73,6 +78,33 @@ export function BookingForm({
       ? Math.ceil(guestCount / room.maxGuests)
       : 1;
   const total = nights ? nights * roomsNeeded * room.pricePerNight : null;
+
+  // Ask the server what the discount is whenever the dates, guests or codes change
+  useEffect(() => {
+    if (!nights) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const result = await previewDiscount({
+          roomId,
+          checkIn,
+          checkOut,
+          guests: guestCount,
+          codes,
+        });
+        if (!cancelled) setPreview(result);
+      } catch {
+        if (!cancelled) setPreview(null);
+      }
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [roomId, checkIn, checkOut, guestCount, codes, nights]);
+
+  const shown = nights ? preview : null;
+  const finalTotal = shown ? shown.total : total;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_20rem] lg:items-start">
@@ -128,6 +160,37 @@ export function BookingForm({
                 ? `Each room fits up to ${room.maxGuests} guest${room.maxGuests === 1 ? "" : "s"}. We book as many rooms as your party needs (up to ${room.quantity}).`
                 : `This room allows up to ${room.maxGuests} guest${room.maxGuests === 1 ? "" : "s"}.`}
             </p>
+          </div>
+        </section>
+
+        <section className={panel}>
+          <h2 className="text-lg font-medium">Promo code</h2>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="promo_codes">Promo code (optional)</Label>
+            <Input
+              id="promo_codes"
+              name="promo_codes"
+              value={codes}
+              onChange={(e) => setCodes(e.target.value)}
+              placeholder="NEWYEAR2027"
+              className="uppercase"
+              autoComplete="off"
+            />
+            <p className="text-xs text-muted-foreground">
+              {stacking === "combine"
+                ? "You can enter more than one code, separated by a space. Your discounts are added together."
+                : "If you qualify for more than one discount, the largest saving applies."}
+            </p>
+            {shown?.errors.map((message) => (
+              <p key={message} className="text-sm text-red-600">
+                {message}
+              </p>
+            ))}
+            {shown?.notes.map((message) => (
+              <p key={message} className="text-xs text-muted-foreground">
+                {message}
+              </p>
+            ))}
           </div>
         </section>
 
@@ -196,10 +259,22 @@ export function BookingForm({
           </dl>
           <div className="flex flex-col gap-2 border-t pt-3 text-sm">
             <SummaryRow label="Price / room / night" value={`RM ${room.pricePerNight.toFixed(2)}`} />
+            {shown && shown.discount > 0 && (
+              <>
+                <SummaryRow label="Subtotal" value={`RM ${shown.gross.toFixed(2)}`} />
+                {shown.lines.map((line) => (
+                  <SummaryRow
+                    key={line.label}
+                    label={line.label}
+                    value={`-RM ${line.amount.toFixed(2)}`}
+                  />
+                ))}
+              </>
+            )}
             <div className="flex justify-between gap-4 font-medium">
               <span>Total</span>
               <span className="text-primary">
-                {total ? `RM ${total.toFixed(2)}` : "Select dates"}
+                {finalTotal ? `RM ${finalTotal.toFixed(2)}` : "Select dates"}
               </span>
             </div>
           </div>

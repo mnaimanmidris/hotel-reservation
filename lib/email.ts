@@ -9,6 +9,8 @@ type BookingRow = {
   check_in: string;
   check_out: string;
   price_at_booking: number;
+  discount_amount: number | null;
+  discount_label: string | null;
   rooms_booked: number;
   rooms: { room_name: string; hotels: { hotel_name: string } | null } | null;
 };
@@ -30,7 +32,7 @@ export async function sendBookingConfirmation(
   const { data, error } = await admin
     .from("bookings")
     .select(
-      "booking_id, guest_name, guest_email, check_in, check_out, price_at_booking, rooms_booked, rooms(room_name, hotels(hotel_name))"
+      "booking_id, guest_name, guest_email, check_in, check_out, price_at_booking, discount_amount, discount_label, rooms_booked, rooms(room_name, hotels(hotel_name))"
     )
     .eq("booking_id", bookingId)
     .single();
@@ -67,6 +69,11 @@ export async function sendBookingConfirmation(
         <tr><td>Check-in</td><td>${booking.check_in}</td></tr>
         <tr><td>Check-out</td><td>${booking.check_out}</td></tr>
         <tr><td>Nights</td><td>${nights}</td></tr>
+        ${
+          Number(booking.discount_amount) > 0
+            ? `<tr><td>Discount</td><td>${escapeHtml(booking.discount_label ?? "Discount")}: -RM ${Number(booking.discount_amount).toFixed(2)}</td></tr>`
+            : ""
+        }
         <tr><td>Total paid</td><td>RM ${amount.toFixed(2)}</td></tr>
         <tr><td>Booking reference</td><td>${booking.booking_id}</td></tr>
       </table>

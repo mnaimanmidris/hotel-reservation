@@ -6,6 +6,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
 import { HOLD_MINUTES } from "@/lib/booking-rules";
 import { getUnitsLeft } from "@/lib/availability";
+import { money } from "@/lib/booking-total";
+import { calculateDiscount } from "@/lib/discounts";
+import type { DiscountPreview } from "@/lib/discount-types";
 
 type BookingValues = {
   check_in: string;
@@ -73,7 +76,7 @@ async function runStartBooking(
   const supabase = await createClient();
   const { data: room } = await supabase
     .from("rooms")
-    .select("room_name, price_per_night, availability_status, max_guests, quantity")
+    .select("room_name, hotel_id, price_per_night, availability_status, max_guests, quantity")
     .eq("room_id", roomId)
     .maybeSingle();
 
@@ -110,6 +113,19 @@ async function runStartBooking(
     };
   }
 
+  // The discount is worked out here, on the server, from the saved rules and codes
+  const gross = money(nights * roomsNeeded * Number(room.price_per_night));
+  const discount = await calculateDiscount({
+    hotelId: room.hotel_id,
+    userId,
+    gross,
+    codesText: String(formData.get("promo_codes") ?? ""),
+  });
+  if (discount.errors.length > 0) {
+    return { error: discount.errors.join(" ") };
+  }
+  const discountLabel = discount.applied.map((line) => line.label).join(" + ");
+
   const admin = createAdminClient();
 
   const { data: booking, error: insertError } = await admin
@@ -125,6 +141,8 @@ async function runStartBooking(
       check_in: checkIn,
       check_out: checkOut,
       price_at_booking: room.price_per_night,
+      discount_amount: discount.discount,
+      discount_label: discountLabel || null,
       booking_status: "pending",
     })
     .select("booking_id")
@@ -132,6 +150,23 @@ async function runStartBooking(
 
   if (insertError || !booking) {
     return { error: "Could not save the booking. Please try again." };
+  }
+
+  // Remember which promo codes this booking used, so uses can be counted
+  const promoLines = discount.applied.filter((line) => line.promoCodeId);
+  if (promoLines.length > 0) {
+    const { error: promoError } = await admin.from("booking_promo_codes").insert(
+      promoLines.map((line) => ({
+        booking_id: booking.booking_id,
+        promo_code_id: line.promoCodeId,
+        code: line.code,
+        amount: line.amount,
+      }))
+    );
+    if (promoError) {
+      await admin.from("bookings").delete().eq("booking_id", booking.booking_id);
+      return { error: "Could not apply the promo code. Please try again." };
+    }
   }
 
   const siteUrl = (process.env.SITE_URL ?? "").trim().replace(/\/+$/, "");
@@ -150,8 +185,9 @@ async function runStartBooking(
           quantity: 1,
           price_data: {
             currency: "myr",
-            unit_amount: Math.round(nights * roomsNeeded * Number(room.price_per_night) * 100),
+            unit_amount: Math.round(discount.total * 100),
             product_data: {
+              ...(discount.discount > 0 && { description: `Includes discount: ${discountLabel}` }),
               name: `${roomsNeeded > 1 ? `${roomsNeeded} x ` : ""}${room.room_name}: ${checkIn} to ${checkOut} (${nights} night${nights > 1 ? "s" : ""})`,
             },
           },
@@ -194,5 +230,55 @@ export async function startBooking(
       guest_email: String(formData.get("guest_email") ?? ""),
       guest_phone: String(formData.get("guest_phone") ?? ""),
     },
+  };
+}
+
+
+// Shows the discount on the booking page before the customer pays.
+// The real booking works it out again on the server.
+export async function previewDiscount(input: {
+  roomId: string;
+  checkIn: string;
+  checkOut: string;
+  guests: number;
+  codes: string;
+}): Promise<DiscountPreview | null> {
+  const dateFormat = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateFormat.test(input.checkIn) || !dateFormat.test(input.checkOut)) {
+    return null;
+  }
+  const nights = Math.round(
+    (new Date(input.checkOut).getTime() - new Date(input.checkIn).getTime()) / DAY
+  );
+  if (nights < 1 || nights > 30) return null;
+  if (!Number.isInteger(input.guests) || input.guests < 1) return null;
+
+  const admin = createAdminClient();
+  const { data: room } = await admin
+    .from("rooms")
+    .select("hotel_id, price_per_night, max_guests")
+    .eq("room_id", input.roomId)
+    .maybeSingle();
+  if (!room) return null;
+
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+
+  const roomsNeeded = Math.ceil(input.guests / room.max_guests);
+  const gross = money(nights * roomsNeeded * Number(room.price_per_night));
+  const result = await calculateDiscount({
+    hotelId: room.hotel_id,
+    userId: auth?.claims?.sub ?? null,
+    gross,
+    codesText: String(input.codes ?? ""),
+  });
+
+  return {
+    gross: result.gross,
+    discount: result.discount,
+    total: result.total,
+    lines: result.applied.map((line) => ({ label: line.label, amount: line.amount })),
+    notes: result.notes,
+    errors: result.errors,
   };
 }
