@@ -131,7 +131,7 @@ export default function ReportsPage({
   searchParams: Promise<{ from?: string; to?: string }>;
 }) {
   return (
-    <main className="mx-auto max-w-5xl p-8">
+    <main className="mx-auto max-w-5xl p-4 sm:p-8">
       <Link href="/manage" className="text-sm underline">
         Back to dashboard
       </Link>

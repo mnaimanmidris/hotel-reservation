@@ -58,7 +58,7 @@ export default function EditRoomPage({
   params: Promise<{ roomId: string }>;
 }) {
   return (
-    <main className="mx-auto max-w-5xl p-8">
+    <main className="mx-auto max-w-5xl p-4 sm:p-8">
       <Link href="/manage/rooms" className="text-sm underline">
         Back to rooms
       </Link>

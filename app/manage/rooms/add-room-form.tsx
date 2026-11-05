@@ -143,8 +143,8 @@ export function AddRoomForm() {
         />
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {message && <p className="text-sm text-green-700">{message}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      {message && <p className="text-sm text-green-700 dark:text-green-400">{message}</p>}
 
       <Button type="submit" disabled={pending}>
         {pending ? "Adding..." : "Add room"}

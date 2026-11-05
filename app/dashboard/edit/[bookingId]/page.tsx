@@ -72,7 +72,7 @@ export default function EditBookingPage({
   params: Promise<{ bookingId: string }>;
 }) {
   return (
-    <main className="mx-auto max-w-5xl p-8">
+    <main className="mx-auto max-w-5xl p-4 sm:p-8">
       <Link href="/dashboard" className="text-sm underline">
         Back to my bookings
       </Link>

@@ -121,7 +121,7 @@ export function PromoCodeForm({ promo }: { promo?: Promo }) {
         Active (customers can use this code)
       </label>
 
-      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
 
       <Button type="submit" disabled={pending}>
         {pending ? "Saving..." : promo ? "Save changes" : "Add promo code"}

@@ -34,10 +34,10 @@ export function CancelBookingButton({
             : "Request cancellation"}
       </Button>
       {state?.error && (
-        <p className="mt-1 text-xs text-red-600">{state.error}</p>
+        <p className="mt-1 text-xs text-destructive">{state.error}</p>
       )}
       {state?.message && (
-        <p className="mt-1 text-xs text-green-700">{state.message}</p>
+        <p className="mt-1 text-xs text-green-700 dark:text-green-400">{state.message}</p>
       )}
     </form>
   );

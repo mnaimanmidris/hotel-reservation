@@ -129,6 +129,19 @@ async function ManageBookings({
     return true;
   });
 
+  const actionsFor = (b: BookingRow) =>
+    b.booking_status === "confirmed" &&
+    (cancellationOf(b)?.approval_status === "pending" ? (
+      <RequestActions bookingId={b.booking_id} />
+    ) : b.check_in >= today ? (
+      <div className="flex flex-col items-start gap-2">
+        <Link href={`/manage/bookings/edit/${b.booking_id}`} className="underline">
+          Change dates
+        </Link>
+        <HotelCancelButton bookingId={b.booking_id} />
+      </div>
+    ) : null);
+
   return (
     <div>
       <h2 className="mb-4 text-xl">{hotel.hotel_name}</h2>
@@ -148,7 +161,48 @@ async function ManageBookings({
       {shown.length === 0 ? (
         <p className="text-sm">No bookings.</p>
       ) : (
-        <div className="overflow-x-auto">
+        <>
+        <div className="grid gap-4 md:grid-cols-2 lg:hidden">
+          {shown.map((b) => {
+            const nights = nightsBetween(b.check_in, b.check_out);
+            return (
+              <article
+                key={b.booking_id}
+                className="flex flex-col gap-3 rounded-xl bg-card p-4 text-card-foreground ring-1 ring-foreground/10"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium">{b.rooms?.room_name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {b.guest_name} · {b.user_id ? "Registered" : "Guest"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-primary">
+                      RM {bookingTotal(b).toFixed(2)}
+                    </p>
+                    {Number(b.discount_amount) > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        {b.discount_label || "Discount"}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <p className="text-sm">
+                  {b.check_in} to {b.check_out} · {nights} night{nights === 1 ? "" : "s"}
+                </p>
+                <p className="break-all text-sm text-muted-foreground">
+                  {b.guest_email}
+                  <br />
+                  {b.guest_phone}
+                </p>
+                <p className="text-sm capitalize">{statusText(b, cancellationOf(b))}</p>
+                {actionsFor(b)}
+              </article>
+            );
+          })}
+        </div>
+        <div className="hidden overflow-x-auto lg:block">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b">
@@ -193,17 +247,7 @@ async function ManageBookings({
                       {statusText(b, cancellationOf(b))}
                     </td>
                     <td className="py-2 pr-6">
-                      {b.booking_status === "confirmed" &&
-                        (cancellationOf(b)?.approval_status === "pending" ? (
-                          <RequestActions bookingId={b.booking_id} />
-                        ) : b.check_in >= today ? (
-                          <div className="flex flex-col items-start gap-2">
-                            <Link href={`/manage/bookings/edit/${b.booking_id}`} className="underline">
-                              Change dates
-                            </Link>
-                            <HotelCancelButton bookingId={b.booking_id} />
-                          </div>
-                        ) : null)}
+                      {actionsFor(b)}
                     </td>
                   </tr>
                 );
@@ -211,6 +255,7 @@ async function ManageBookings({
             </tbody>
           </table>
         </div>
+        </>
       )}
     </div>
   );
@@ -222,7 +267,7 @@ export default function ManageBookingsPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   return (
-    <main className="mx-auto max-w-6xl p-8">
+    <main className="mx-auto max-w-6xl p-4 sm:p-8">
       <Link href="/manage" className="text-sm underline">
         Back to dashboard
       </Link>

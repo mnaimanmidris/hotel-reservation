@@ -182,7 +182,7 @@ export function BookingForm({
                 : "If you qualify for more than one discount, the largest saving applies."}
             </p>
             {shown?.errors.map((message) => (
-              <p key={message} className="text-sm text-red-600">
+              <p key={message} className="text-sm text-destructive">
                 {message}
               </p>
             ))}
@@ -225,7 +225,7 @@ export function BookingForm({
           </div>
         </section>
 
-        {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+        {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
 
         <Button type="submit" disabled={pending}>
           {pending ? "Redirecting to payment..." : "Proceed to payment"}

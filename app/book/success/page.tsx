@@ -152,7 +152,7 @@ export default function BookingSuccessPage({
   searchParams: Promise<{ booking_id?: string }>;
 }) {
   return (
-    <main className="mx-auto max-w-5xl p-8">
+    <main className="mx-auto max-w-5xl p-4 sm:p-8">
       <h1 className="mb-6 text-2xl font-semibold">Your booking</h1>
       <Suspense fallback={<p>Loading...</p>}>
         <BookingStatus searchParams={searchParams} />

@@ -21,7 +21,7 @@ export function TogglePromoButton({
         {active ? "Turn off" : "Turn on"}
       </Button>
       {state?.error && (
-        <p className="mt-1 text-xs text-red-600">{state.error}</p>
+        <p className="mt-1 text-xs text-destructive">{state.error}</p>
       )}
     </form>
   );
@@ -50,7 +50,7 @@ export function DeletePromoButton({
         {pending ? "Deleting..." : "Delete"}
       </Button>
       {state?.error && (
-        <p className="mt-1 text-xs text-red-600">{state.error}</p>
+        <p className="mt-1 text-xs text-destructive">{state.error}</p>
       )}
     </form>
   );

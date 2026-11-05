@@ -7,7 +7,7 @@ import { getSettings } from "@/lib/settings";
 // A valid number is shown in international format, anything else exactly as saved
 function showPhone(phone: string) {
   const parsed = parsePhoneNumberFromString(phone, "MY");
-  return parsed?.isValid() ? parsed.formatInternational() : phone;
+  return parsed?.isValid() ? parsed.number : phone;
 }
 
 export async function SiteFooter() {

@@ -22,7 +22,7 @@ async function RoomsContent({ searchParams }: { searchParams: SearchParams }) {
     <>
       <SearchBar filters={filters} today={todayInMalaysia()} />
       {filters.error && (
-        <p className="mb-6 text-sm text-red-600">{filters.error}</p>
+        <p className="mb-6 text-sm text-destructive">{filters.error}</p>
       )}
 
       <Suspense fallback={null}>

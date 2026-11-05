@@ -34,7 +34,7 @@ export function NavBar({
       href={item.href}
       onClick={() => setOpen(false)}
       aria-current={isActive(pathname, item.href) ? "page" : undefined}
-      className="rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground aria-[current=page]:font-medium aria-[current=page]:text-primary"
+      className="whitespace-nowrap rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground aria-[current=page]:font-medium aria-[current=page]:text-primary"
     >
       {item.label}
     </Link>
@@ -55,13 +55,13 @@ export function NavBar({
           {brand}
         </Link>
 
-        <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
+        <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
           {links}
           {logoutForm}
           <ThemeToggle />
         </nav>
 
-        <div className="flex items-center gap-1 md:hidden">
+        <div className="flex items-center gap-1 lg:hidden">
           <ThemeToggle />
           <Button
             type="button"
@@ -79,7 +79,7 @@ export function NavBar({
       {open && (
         <nav
           aria-label="Mobile"
-          className="flex flex-col gap-1 border-t px-4 py-3 md:hidden"
+          className="flex flex-col gap-1 border-t px-4 py-3 lg:hidden"
         >
           {links}
           {logoutForm && <div className="px-3 pt-2">{logoutForm}</div>}

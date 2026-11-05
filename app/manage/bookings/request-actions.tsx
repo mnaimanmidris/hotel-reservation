@@ -54,16 +54,16 @@ export function RequestActions({ bookingId }: { bookingId: string }) {
       </form>
 
       {approveState?.error && (
-        <p className="text-xs text-red-600">{approveState.error}</p>
+        <p className="text-xs text-destructive">{approveState.error}</p>
       )}
       {rejectState?.error && (
-        <p className="text-xs text-red-600">{rejectState.error}</p>
+        <p className="text-xs text-destructive">{rejectState.error}</p>
       )}
       {approveState?.message && (
-        <p className="text-xs text-green-700">{approveState.message}</p>
+        <p className="text-xs text-green-700 dark:text-green-400">{approveState.message}</p>
       )}
       {rejectState?.message && (
-        <p className="text-xs text-green-700">{rejectState.message}</p>
+        <p className="text-xs text-green-700 dark:text-green-400">{rejectState.message}</p>
       )}
     </div>
   );

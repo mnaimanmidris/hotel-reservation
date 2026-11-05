@@ -37,7 +37,7 @@ export function EditBookingForm({
         <Input id="check_out" name="check_out" type="date" defaultValue={checkOut} required />
       </div>
 
-      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
 
       <Button type="submit" disabled={pending}>
         {pending ? "Saving..." : "Save new dates"}

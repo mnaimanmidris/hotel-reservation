@@ -44,7 +44,7 @@ export function PasswordForm() {
         />
       </div>
 
-      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
       {state?.message && <p className="text-sm text-green-700 dark:text-green-400">{state.message}</p>}
 
       <Button type="submit" disabled={pending} className="w-fit">

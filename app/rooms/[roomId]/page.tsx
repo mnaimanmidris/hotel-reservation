@@ -198,7 +198,7 @@ async function RoomContent({
           </Button>
         </form>
 
-        {filters.error && <p className="text-sm text-red-600">{filters.error}</p>}
+        {filters.error && <p className="text-sm text-destructive">{filters.error}</p>}
 
         {nights !== null && filters.checkIn && filters.checkOut && (
           <dl className="flex flex-col gap-2 border-t pt-3 text-sm">
@@ -216,7 +216,7 @@ async function RoomContent({
           </dl>
         )}
 
-        {message && <p className="text-sm text-red-600">{message}</p>}
+        {message && <p className="text-sm text-destructive">{message}</p>}
 
         {canBook ? (
           <Link

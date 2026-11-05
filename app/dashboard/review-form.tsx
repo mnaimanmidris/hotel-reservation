@@ -57,9 +57,9 @@ export function ReviewForm({ bookingId }: { bookingId: string }) {
           Close
         </Button>
       </div>
-      {state?.error && <p className="text-xs text-red-600">{state.error}</p>}
+      {state?.error && <p className="text-xs text-destructive">{state.error}</p>}
       {state?.message && (
-        <p className="text-xs text-green-700">{state.message}</p>
+        <p className="text-xs text-green-700 dark:text-green-400">{state.message}</p>
       )}
     </form>
   );
