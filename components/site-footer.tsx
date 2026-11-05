@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { connection } from "next/server";
+import { InstallAppButton } from "@/components/install-app-button";
 import { getSettings } from "@/lib/settings";
 
 export async function SiteFooter() {
@@ -28,6 +29,7 @@ export async function SiteFooter() {
           <Link href="/rooms" className="w-fit text-muted-foreground hover:text-foreground">
             Rooms
           </Link>
+          <InstallAppButton />
         </nav>
 
         {(email || phone) && (
