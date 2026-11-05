@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { connection } from "next/server";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { InstallAppButton } from "@/components/install-app-button";
 import { getSettings } from "@/lib/settings";
+
+// A valid number is shown in international format, anything else exactly as saved
+function showPhone(phone: string) {
+  const parsed = parsePhoneNumberFromString(phone, "MY");
+  return parsed?.isValid() ? parsed.formatInternational() : phone;
+}
 
 export async function SiteFooter() {
   await connection();
@@ -48,7 +55,7 @@ export async function SiteFooter() {
                 href={`tel:${phone.replace(/[^\d+]/g, "")}`}
                 className="w-fit text-muted-foreground hover:text-foreground"
               >
-                {phone}
+                {showPhone(phone)}
               </a>
             )}
           </div>

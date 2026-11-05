@@ -3,6 +3,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { siteConfig } from "@/lib/site-config";
 import { ACCENTS } from "@/lib/brand";
+import { normalizePhone } from "@/lib/phone";
 
 export type SettingDef = {
   key: string;
@@ -12,6 +13,8 @@ export type SettingDef = {
   multiline?: boolean;
   // Changed only by its own control, never by the generic settings form
   managed?: boolean;
+  // A text setting that must be a real phone number
+  phone?: boolean;
   label: string;
   description?: string;
   default: string | number;
@@ -117,6 +120,7 @@ export const SETTING_DEFS: SettingDef[] = [
     group: "brand",
     section: "Footer",
     type: "text",
+    phone: true,
     label: "Contact phone",
     description: "Shown in the footer. Leave empty to hide it.",
     default: "",
@@ -197,6 +201,16 @@ export function parseSettingValue(
     if (def.required && text.length === 0) return { error: "is required." };
     if (text.length > (def.max ?? 200)) {
       return { error: `must be ${def.max ?? 200} characters or fewer.` };
+    }
+    if (def.phone && text) {
+      const phone = normalizePhone(text);
+      if (!phone) {
+        return {
+          error:
+            "must be a valid phone number. Start with the country code if it is not a Malaysian number, for example +60312345678.",
+        };
+      }
+      return { value: phone };
     }
     return { value: text };
   }
