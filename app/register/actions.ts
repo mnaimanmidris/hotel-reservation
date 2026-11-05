@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { normalizePhone } from "@/lib/phone";
 
 const COUNTRY_CODES = ["+60", "+65", "+62", "+673", "+66"];
 
@@ -28,8 +29,9 @@ export async function register(
   if (!COUNTRY_CODES.includes(countryCode)) {
     return { error: "Please choose a country code." };
   }
-  if (!/^[0-9]{7,12}$/.test(digits)) {
-    return { error: "Please enter a valid phone number." };
+  const phone = normalizePhone(`${countryCode}${digits}`);
+  if (!phone) {
+    return { error: "Please enter a valid phone number for the country you chose." };
   }
   if (password.length < 8) {
     return { error: "Password must be at least 8 characters." };
@@ -40,7 +42,7 @@ export async function register(
     email,
     password,
     options: {
-      data: { full_name: fullName, phone: `${countryCode}${digits}` },
+      data: { full_name: fullName, phone },
     },
   });
 

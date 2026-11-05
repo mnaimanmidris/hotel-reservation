@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { PHONE_ERROR, normalizePhone } from "@/lib/phone";
 
 type HotelFormState = { error?: string; message?: string } | null;
 
@@ -12,7 +13,8 @@ export async function updateHotel(
   const description = String(formData.get("description") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim();
   const contactEmail = String(formData.get("contact_email") ?? "").trim();
-  const contactPhone = String(formData.get("contact_phone") ?? "").replace(/[\s-]/g, "");
+  const contactPhoneInput = String(formData.get("contact_phone") ?? "").trim();
+  const contactPhone = contactPhoneInput ? normalizePhone(contactPhoneInput) : "";
 
   if (description.length > 1000) {
     return { error: "The description must be 1000 characters or fewer." };
@@ -23,10 +25,8 @@ export async function updateHotel(
   if (contactEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contactEmail)) {
     return { error: "Please enter a valid contact email address." };
   }
-  if (contactPhone && !/^\+[0-9]{8,15}$/.test(contactPhone)) {
-    return {
-      error: "Contact phone must start with the country code, for example +60312345678.",
-    };
+  if (contactPhoneInput && !contactPhone) {
+    return { error: PHONE_ERROR };
   }
 
   const supabase = await createClient();

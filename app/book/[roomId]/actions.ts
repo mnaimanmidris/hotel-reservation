@@ -7,6 +7,7 @@ import { stripe } from "@/lib/stripe";
 import { HOLD_MINUTES } from "@/lib/booking-rules";
 import { getUnitsLeft } from "@/lib/availability";
 import { money } from "@/lib/booking-total";
+import { PHONE_ERROR, normalizePhone } from "@/lib/phone";
 import { calculateDiscount } from "@/lib/discounts";
 import type { DiscountPreview } from "@/lib/discount-types";
 
@@ -31,7 +32,7 @@ async function runStartBooking(
   const checkOut = String(formData.get("check_out") ?? "");
   const guestName = String(formData.get("guest_name") ?? "").trim();
   const guestEmail = String(formData.get("guest_email") ?? "").trim().toLowerCase();
-  const guestPhone = String(formData.get("guest_phone") ?? "").replace(/[\s-]/g, "");
+  const guestPhone = normalizePhone(String(formData.get("guest_phone") ?? ""));
   const guests = Number(formData.get("guests"));
 
   const dateFormat = /^\d{4}-\d{2}-\d{2}$/;
@@ -62,11 +63,8 @@ async function runStartBooking(
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(guestEmail)) {
     return { error: "Please enter a valid email address." };
   }
-  if (!/^\+[0-9]{8,15}$/.test(guestPhone)) {
-    return {
-      error:
-        "Please enter your phone number with the country code, for example +60123456789.",
-    };
+  if (!guestPhone) {
+    return { error: PHONE_ERROR };
   }
 
   if (!Number.isInteger(guests) || guests < 1) {

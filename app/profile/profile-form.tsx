@@ -36,8 +36,8 @@ export function ProfileForm({
           name="phone"
           type="tel"
           placeholder="+60123456789"
-          pattern="\+[0-9]{8,15}"
-          title="Start with the country code, for example +60123456789"
+          pattern="[+0-9 \-]{7,20}"
+          title="Digits only. Add the country code if it is not a Malaysian number, for example +60123456789"
           defaultValue={phone}
           required
         />

@@ -70,8 +70,8 @@ export function HotelForm({ hotel }: { hotel: Hotel }) {
           name="contact_phone"
           type="tel"
           placeholder="+60312345678"
-          pattern="\+[0-9]{8,15}"
-          title="Start with the country code, for example +60312345678"
+          pattern="[+0-9 \-]{7,20}"
+          title="Digits only. Add the country code if it is not a Malaysian number, for example +60312345678"
           defaultValue={hotel.contact_phone ?? ""}
         />
       </div>

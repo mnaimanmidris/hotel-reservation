@@ -10,7 +10,8 @@ export async function GET(
 ) {
   await connection();
   const { size } = await ctx.params;
-  const px = size === "192" ? 192 : size === "512" ? 512 : null;
+  const maskable = size === "maskable";
+  const px = size === "192" ? 192 : size === "512" || maskable ? 512 : null;
   if (!px) {
     return new Response("Not found", { status: 404 });
   }
@@ -38,6 +39,7 @@ export async function GET(
           alignItems: "center",
           justifyContent: "center",
           background: accent.swatch,
+          borderRadius: maskable ? 0 : "50%",
           color: "#ffffff",
           fontSize: px * 0.42,
           fontWeight: 700,

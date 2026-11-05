@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { PHONE_ERROR, normalizePhone } from "@/lib/phone";
 
 type ProfileState = { error?: string; message?: string } | null;
 
@@ -10,15 +11,13 @@ export async function updateProfile(
   formData: FormData
 ): Promise<ProfileState> {
   const fullName = String(formData.get("full_name") ?? "").trim();
-  const phone = String(formData.get("phone") ?? "").replace(/[\s-]/g, "");
+  const phone = normalizePhone(String(formData.get("phone") ?? ""));
 
   if (fullName.length < 1 || fullName.length > 100) {
     return { error: "Please enter your full name (up to 100 characters)." };
   }
-  if (!/^\+[0-9]{8,15}$/.test(phone)) {
-    return {
-      error: "Phone number must start with the country code, for example +60123456789.",
-    };
+  if (!phone) {
+    return { error: PHONE_ERROR };
   }
 
   const supabase = await createClient();
