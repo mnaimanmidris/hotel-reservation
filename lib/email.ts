@@ -106,7 +106,6 @@ export async function sendCancellationEmail(
 
   const booking = data as unknown as BookingRow;
   const hotelName = escapeHtml(booking.rooms?.hotels?.hotel_name ?? "");
-  const roomName = escapeHtml(booking.rooms?.room_name ?? "");
   const guestName = escapeHtml(booking.guest_name);
   const hotelLabel = booking.rooms?.hotels?.hotel_name ?? "your stay";
 

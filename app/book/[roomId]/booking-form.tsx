@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import type { DiscountPreview } from "@/lib/discount-types";
 import { roomImageUrl } from "@/lib/room-image-url";
 import { submitKeepingValues } from "@/lib/submit-keep-values";
+import { formatDate } from "@/lib/format-date";
 
 type Defaults = { name: string; email: string; phone: string };
 type RoomInfo = {
@@ -26,15 +27,6 @@ const panel = "flex flex-col gap-4 rounded-xl bg-card p-5 ring-1 ring-foreground
 
 function utc(date: string) {
   return new Date(`${date}T00:00:00Z`);
-}
-
-function formatDate(date: string) {
-  return utc(date).toLocaleDateString("en-GB", {
-    timeZone: "UTC",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }) {

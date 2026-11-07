@@ -27,7 +27,7 @@ export function HotelForm({ hotel }: { hotel: Hotel }) {
         <Label htmlFor="hotel_name">Hotel name</Label>
         <Input id="hotel_name" value={hotel.hotel_name} disabled readOnly />
         <p className="text-xs text-muted-foreground">
-          The name can't be changed here. Contact the system administrator.
+          The name can&apos;t be changed here. Contact the system administrator.
         </p>
       </div>
 

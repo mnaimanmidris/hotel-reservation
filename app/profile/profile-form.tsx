@@ -27,7 +27,7 @@ export function ProfileForm({
       <div className="flex flex-col gap-2">
         <Label htmlFor="email">Email</Label>
         <Input id="email" value={email} disabled readOnly />
-        <p className="text-xs text-muted-foreground">Your email can't be changed here.</p>
+        <p className="text-xs text-muted-foreground">Your email can&apos;t be changed here.</p>
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="phone">Phone number</Label>

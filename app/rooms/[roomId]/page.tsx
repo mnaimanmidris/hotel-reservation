@@ -251,7 +251,7 @@ async function RoomContent({
         </p>
         <p className="text-sm text-muted-foreground">
           Free changes and cancellation up to {deadlineDays} day
-          {deadlineDays === 1 ? "" : "s"} before check-in. After that, a cancellation needs the hotel's approval.
+          {deadlineDays === 1 ? "" : "s"} before check-in. After that, a cancellation needs the hotel&apos;s approval.
         </p>
 
         {hotel?.description && <p className="text-sm">{hotel.description}</p>}
