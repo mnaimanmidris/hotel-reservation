@@ -545,3 +545,8 @@ create index booking_promo_codes_promo_idx on booking_promo_codes (promo_code_id
 alter table booking_promo_codes enable row level security;
 
 grant select, insert, delete on public.booking_promo_codes to service_role;
+
+-- LEAST PRIVILEGE: the API roles never need these table-level privileges
+revoke references, trigger, truncate, maintain on all tables in schema public from anon, authenticated;
+alter default privileges for role postgres in schema public
+  revoke references, trigger, truncate, maintain on tables from anon, authenticated;
