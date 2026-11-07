@@ -29,6 +29,8 @@ create table rooms (
     price_per_night numeric(10,2) not null check (price_per_night > 0),
     availability_status text not null default 'available'
       check (availability_status in ('available', 'unavailable')),
+    max_guests integer not null default 2 check (max_guests >= 1),
+    quantity integer not null default 1 check (quantity >= 1),
     constraint rooms_hotel_room_unique unique (hotel_id, room_name)
 );
 
@@ -45,6 +47,10 @@ create table bookings (
     price_at_booking numeric(10,2) not null,
     booking_status text not null default 'pending'
         check (booking_status in ('pending', 'confirmed', 'cancelled')),
+    guests integer not null default 1 check (guests >= 1),
+    rooms_booked integer not null default 1 check (rooms_booked >= 1),
+    discount_amount numeric(10,2) not null default 0 check (discount_amount >= 0),
+    discount_label text,
     created_at timestamptz not null default now(),
     check (check_out > check_in)
 );
@@ -233,14 +239,6 @@ with check (
   )
 );
 
-alter table rooms
-  add column max_guests integer not null default 2
-  check (max_guests >= 1);
-
-alter table bookings
-  add column guests integer not null default 1
-  check (guests >= 1);
-
 create table room_images (
     image_id uuid primary key default gen_random_uuid(),
     room_id uuid not null references rooms(room_id) on delete cascade,
@@ -256,7 +254,7 @@ alter table room_images enable row level security;
 grant select on public.room_images to anon, authenticated;
 grant insert, update, delete on public.room_images to authenticated;
 
-create policy "public read room_images" on room_images to anon, authenticated
+create policy "public read room_images" on room_images
   for select using (true);
 
 create policy "manager adds room_images to own rooms" on room_images
@@ -343,14 +341,6 @@ create policy "manager deletes room images of own rooms" on storage.objects
     )
   );
 
-alter table rooms
-  add column quantity integer not null default 1
-  check (quantity >= 1);
-
-alter table bookings
-  add column rooms_booked integer not null default 1
-  check (rooms_booked >= 1);
-
 grant update (full_name, phone) on public.users to authenticated;
 
 create policy "update own profile" on users
@@ -366,15 +356,9 @@ create policy "manager edits own hotel" on hotels
   using (user_id = (select auth.uid()))
   with check (user_id = (select auth.uid()));
 
-alter table users drop constraint users_role_check;
-alter table users add constraint users_role_check
-  check (role in ('customer', 'hotel_management', 'system_admin'));
-
 create table site_settings (
     key text primary key,
     value jsonb not null,
-    edit_tier text not null default 'staff'
-      check (edit_tier in ('staff', 'pic')),
     updated_by uuid references users(user_id),
     updated_at timestamptz not null default now()
 );
@@ -387,53 +371,38 @@ grant update (value, updated_by, updated_at) on public.site_settings to authenti
 create policy "public read site_settings" on site_settings
   for select using (true);
 
-create policy "staff edit staff settings" on site_settings
-  for update to authenticated
-  using (
-    edit_tier = 'staff'
-    and exists (
-      select 1 from users u
-      where u.user_id = (select auth.uid())
-        and u.role in ('hotel_management', 'system_admin')
-    )
-  )
-  with check (
-    edit_tier = 'staff'
-    and exists (
-      select 1 from users u
-      where u.user_id = (select auth.uid())
-        and u.role in ('hotel_management', 'system_admin')
-    )
-  );
-
-create policy "pic edits all settings" on site_settings
+create policy "hotel management edits settings" on site_settings
   for update to authenticated
   using (
     exists (
-      select 1 from users u
-      where u.user_id = (select auth.uid()) and u.role = 'system_admin'
+      select 1 from public.users u
+      where u.user_id = (select auth.uid()) and u.role = 'hotel_management'
     )
   )
   with check (
     exists (
-      select 1 from users u
-      where u.user_id = (select auth.uid()) and u.role = 'system_admin'
+      select 1 from public.users u
+      where u.user_id = (select auth.uid()) and u.role = 'hotel_management'
     )
   );
 
-insert into site_settings (key, value, edit_tier) values
-  ('brand.name', '"HotelReserve"', 'staff'),
-  ('brand.tagline', '"Find a room, book it and pay online."', 'staff'),
-  ('brand.accent', '"blue"', 'staff'),
-  ('security.password_min_length', '8', 'pic'),
-  ('home.reason1_title', '"Secure online payment"', 'staff'),
-  ('home.reason1_text', '"Pay online when you book, through Stripe''s secure checkout."', 'staff'),
-  ('home.reason2_title', '"Free changes before the deadline"', 'staff'),
-  ('home.reason2_text', '"Registered guests can change their dates or cancel for a refund inside the free change window."', 'staff'),
-  ('home.reason3_title', '"Reviews from real stays"', 'staff'),
-  ('home.reason3_text', '"Only guests who have completed a stay can write a review."', 'staff'),
-  ('footer.contact_email', '""', 'staff'),
-  ('footer.contact_phone', '""', 'staff');
+insert into site_settings (key, value) values
+  ('brand.name', '"HotelReserve"'),
+  ('brand.tagline', '"Find a room, book it and pay online."'),
+  ('brand.accent', '"blue"'),
+  ('home.reason1_title', '"Secure online payment"'),
+  ('home.reason1_text', '"Pay online when you book, through Stripe''s secure checkout."'),
+  ('home.reason2_title', '"Free changes before the deadline"'),
+  ('home.reason2_text', '"Registered guests can change their dates or cancel for a refund inside the free change window."'),
+  ('home.reason3_title', '"Reviews from real stays"'),
+  ('home.reason3_text', '"Only guests who have completed a stay can write a review."'),
+  ('footer.contact_email', '""'),
+  ('footer.contact_phone', '""'),
+  ('brand.hero_image', '""'),
+  ('rules.free_change_deadline_days', '3'),
+  ('rules.member_min_stays', '3'),
+  ('rules.member_discount_percent', '0'),
+  ('rules.discount_stacking', '"best"');
 
 create table audit_log (
     log_id uuid primary key default gen_random_uuid(),
@@ -449,16 +418,7 @@ alter table audit_log enable row level security;
 
 grant select on public.audit_log to authenticated;
 grant select, insert on public.audit_log to service_role;
-grant select, update on public.users to service_role;
-
-create policy "pic reads audit log" on audit_log
-  for select to authenticated
-  using (
-    exists (
-      select 1 from users u
-      where u.user_id = (select auth.uid()) and u.role = 'system_admin'
-    )
-  );
+grant select on public.users to service_role;
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
@@ -474,7 +434,7 @@ create policy "staff reads site images" on storage.objects
     and exists (
       select 1 from public.users u
       where u.user_id = (select auth.uid())
-        and u.role in ('hotel_management', 'system_admin')
+        and u.role = 'hotel_management'
     )
   );
 
@@ -485,7 +445,7 @@ create policy "staff uploads site images" on storage.objects
     and exists (
       select 1 from public.users u
       where u.user_id = (select auth.uid())
-        and u.role in ('hotel_management', 'system_admin')
+        and u.role = 'hotel_management'
     )
   );
 
@@ -496,90 +456,9 @@ create policy "staff deletes site images" on storage.objects
     and exists (
       select 1 from public.users u
       where u.user_id = (select auth.uid())
-        and u.role in ('hotel_management', 'system_admin')
+        and u.role = 'hotel_management'
     )
   );
-
-insert into site_settings (key, value, edit_tier)
-values ('brand.hero_image', '""', 'staff');
-
--- Removal of system_admin and the PIC (4 Nov 2026)
-begin;
-
--- 1. PIC test account becomes a normal customer
-update users set role = 'customer' where role = 'system_admin';
-
--- 2. Back to two roles
-alter table users drop constraint users_role_check;
-alter table users add constraint users_role_check
-  check (role in ('customer', 'hotel_management'));
-
--- 3. Policies that only existed for the PIC
-drop policy "pic edits all settings" on site_settings;
-drop policy "pic reads audit log" on audit_log;
-
--- 4. Settings: hotel management only, no tiers
-delete from site_settings where key = 'security.password_min_length';
-
-alter policy "staff edit staff settings" on site_settings
-  using (
-    exists (
-      select 1 from public.users u
-      where u.user_id = (select auth.uid()) and u.role = 'hotel_management'
-    )
-  )
-  with check (
-    exists (
-      select 1 from public.users u
-      where u.user_id = (select auth.uid()) and u.role = 'hotel_management'
-    )
-  );
-
-alter table site_settings drop column edit_tier;
-
-alter policy "staff edit staff settings" on site_settings
-  rename to "hotel management edits settings";
-
--- 5. Site images: hotel management only
-alter policy "staff reads site images" on storage.objects
-  using (
-    bucket_id = 'site-images'
-    and exists (
-      select 1 from public.users u
-      where u.user_id = (select auth.uid()) and u.role = 'hotel_management'
-    )
-  );
-
-alter policy "staff uploads site images" on storage.objects
-  with check (
-    bucket_id = 'site-images'
-    and exists (
-      select 1 from public.users u
-      where u.user_id = (select auth.uid()) and u.role = 'hotel_management'
-    )
-  );
-
-alter policy "staff deletes site images" on storage.objects
-  using (
-    bucket_id = 'site-images'
-    and exists (
-      select 1 from public.users u
-      where u.user_id = (select auth.uid()) and u.role = 'hotel_management'
-    )
-  );
-
--- 6. The server role no longer needs to update users (that grant was for the PIC)
-revoke update on public.users from service_role;
-
-commit;
-
--- Booking rules setting
-insert into site_settings (key, value) values ('rules.free_change_deadline_days', '3');
-
--- Discount columns on bookings
-alter table bookings
-  add column discount_amount numeric(10,2) not null default 0 check (discount_amount >= 0),
-  add column discount_label text;
 
 -- Promo codes and member discount settings
 create table promo_codes (
@@ -651,11 +530,6 @@ create policy "manager deletes promo codes of own hotel" on promo_codes
         and h.user_id = (select auth.uid())
     )
   );
-
-insert into site_settings (key, value) values
-  ('rules.member_min_stays', '3'),
-  ('rules.member_discount_percent', '0'),
-  ('rules.discount_stacking', '"best"');
 
 -- Promo codes used by a booking
 create table booking_promo_codes (
