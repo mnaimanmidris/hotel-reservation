@@ -31,7 +31,8 @@ create table rooms (
       check (availability_status in ('available', 'unavailable')),
     max_guests integer not null default 2 check (max_guests >= 1),
     quantity integer not null default 1 check (quantity >= 1),
-    constraint rooms_hotel_room_unique unique (hotel_id, room_name)
+    address text,
+    constraint rooms_hotel_room_unique
 );
 
 --4. BOOKINGS Table

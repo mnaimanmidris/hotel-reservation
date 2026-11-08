@@ -27,6 +27,7 @@ type Room = {
   max_guests: number;
   quantity: number;
   availability_status: string;
+  address: string | null;
   hotels: {
     hotel_name: string;
     description: string | null;
@@ -65,7 +66,7 @@ async function RoomContent({
   const { data } = await supabase
     .from("rooms")
     .select(
-      "room_id, room_name, room_type, price_per_night, max_guests, quantity, availability_status, hotels(hotel_name, description, address, contact_email, contact_phone), room_images(image_id, image_path, sort_order)"
+      "room_id, room_name, room_type, price_per_night, max_guests, quantity, availability_status, address, hotels(hotel_name, description, address, contact_email, contact_phone), room_images(image_id, image_path, sort_order)"
     )
     .eq("room_id", roomId)
     .maybeSingle();
@@ -255,11 +256,11 @@ async function RoomContent({
         </p>
 
         {hotel?.description && <p className="text-sm">{hotel.description}</p>}
-        {(hotel?.address || hotel?.contact_email || hotel?.contact_phone) && (
+        {(room.address || hotel?.address || hotel?.contact_email || hotel?.contact_phone) && (
           <div className="flex flex-col gap-1 border-t pt-3 text-sm text-muted-foreground">
-            {hotel.address && <p>{hotel.address}</p>}
-            {hotel.contact_phone && <p>{hotel.contact_phone}</p>}
-            {hotel.contact_email && <p>{hotel.contact_email}</p>}
+            {(room.address || hotel?.address) && <p>{room.address || hotel?.address}</p>}
+            {hotel?.contact_phone && <p>{hotel.contact_phone}</p>}
+            {hotel?.contact_email && <p>{hotel.contact_email}</p>}
           </div>
         )}
       </section>

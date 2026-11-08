@@ -119,6 +119,16 @@ export function AddRoomForm() {
       </div>
 
       <div className="flex flex-col gap-2">
+        <Label htmlFor="address">Address (optional)</Label>
+        <Input
+          id="address"
+          name="address"
+          placeholder="Leave empty to use the hotel address"
+          maxLength={300}
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
         <Label htmlFor="availability_status">Status</Label>
         <select
           id="availability_status"

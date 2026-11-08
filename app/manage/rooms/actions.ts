@@ -13,6 +13,7 @@ type RoomValues = {
   price_per_night: number;
   availability_status: string;
   max_guests: number;
+  address: string | null;
 };
 
 function parseRoomForm(
@@ -24,6 +25,7 @@ function parseRoomForm(
   const status = String(formData.get("availability_status") ?? "available");
   const maxGuests = Number(formData.get("max_guests"));
   const quantity = Number(formData.get("quantity"));
+  const address = String(formData.get("address") ?? "").trim();
 
   if (roomName.length < 2) {
     return { error: "Please enter a room name." };
@@ -43,6 +45,9 @@ function parseRoomForm(
   if (!Number.isInteger(quantity) || quantity < 1 || quantity > 500) {
     return { error: "Number of rooms must be a whole number from 1 to 500." };
   }
+  if (address.length > 300) {
+    return { error: "The address must be 300 characters or fewer." };
+  }
 
   return {
     values: {
@@ -52,6 +57,7 @@ function parseRoomForm(
       price_per_night: price,
       availability_status: status,
       max_guests: maxGuests,
+      address: address || null,
     },
   };
 }

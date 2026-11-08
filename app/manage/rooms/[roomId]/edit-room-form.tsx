@@ -15,6 +15,7 @@ type Room = {
   availability_status: string;
   max_guests: number;
   quantity: number;
+  address: string | null;
 };
 
 const selectClass = "h-9 rounded-md border bg-transparent px-2 text-sm";
@@ -93,6 +94,17 @@ export function EditRoomForm({
           step="1"
           defaultValue={room.quantity}
           required
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="address">Address (optional)</Label>
+        <Input
+          id="address"
+          name="address"
+          defaultValue={room.address ?? ""}
+          placeholder="Leave empty to use the hotel address"
+          maxLength={300}
         />
       </div>
 
