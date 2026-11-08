@@ -32,7 +32,7 @@ create table rooms (
     max_guests integer not null default 2 check (max_guests >= 1),
     quantity integer not null default 1 check (quantity >= 1),
     address text,
-    constraint rooms_hotel_room_unique
+    constraint rooms_hotel_room_unique unique (hotel_id, room_name)
 );
 
 --4. BOOKINGS Table
