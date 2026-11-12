@@ -144,6 +144,7 @@ async function DashboardContent() {
   let totalBookings = 0;
   let upcoming = 0;
   let pendingRequests: BookingLine[] = [];
+  let requestCount = 0;
   let recent: BookingLine[] = [];
   let revenue = 0;
 
@@ -151,7 +152,7 @@ async function DashboardContent() {
     const lineColumns =
       "booking_id, guest_name, check_in, check_out, rooms_booked, booking_status, rooms(room_name)";
 
-    const [totalResult, upcomingResult, requestsResult, recentResult, revenueResult] =
+    const [totalResult, upcomingResult, requestsResult, requestCountResult, recentResult, revenueResult] =
       await Promise.all([
         admin
           .from("bookings")
@@ -180,6 +181,12 @@ async function DashboardContent() {
           .order("created_at", { ascending: false })
           .limit(5),
         admin
+          .from("bookings")
+          .select("booking_id, cancellations!inner(approval_status)", { count: "exact", head: true })
+          .in("room_id", roomIds)
+          .eq("booking_status", "confirmed")
+          .eq("cancellations.approval_status", "pending"),
+        admin
           .from("payments")
           .select("amount, bookings!inner(room_id)")
           .in("bookings.room_id", roomIds)
@@ -191,6 +198,7 @@ async function DashboardContent() {
     totalBookings = totalResult.count ?? 0;
     upcoming = upcomingResult.count ?? 0;
     pendingRequests = (requestsResult.data ?? []) as unknown as BookingLine[];
+    requestCount = requestCountResult.count ?? 0;
     recent = (recentResult.data ?? []) as unknown as BookingLine[];
     revenue = (revenueResult.data ?? []).reduce(
       (sum, payment) => sum + Number(payment.amount),
@@ -220,7 +228,7 @@ async function DashboardContent() {
         <StatCard label="Upcoming bookings" value={String(upcoming)} />
         <StatCard
           label="Cancellation requests waiting"
-          value={String(pendingRequests.length)}
+          value={String(requestCount)}
         />
         <StatCard
           label="Revenue this month"

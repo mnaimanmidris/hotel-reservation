@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/client";
 const BUCKET = "room-images";
 const MAX_SIDE = 1600;
 
-// Moves into the settings table in step S1
+// Most photos allowed per room (fixed in code)
 export const MAX_IMAGES = 8;
 
 async function toBlob(canvas: HTMLCanvasElement, type: string) {

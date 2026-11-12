@@ -24,7 +24,7 @@ export async function saveSettings(
     .eq("user_id", userId)
     .maybeSingle();
   const role = profile?.role;
-  if (role !== "hotel_management" && role !== "system_admin") {
+  if (role !== "hotel_management") {
     return { error: "You do not have access to these settings." };
   }
 
@@ -99,7 +99,7 @@ export async function setHeroImage(path: string): Promise<{ error?: string }> {
     .eq("user_id", userId)
     .maybeSingle();
   const role = profile?.role;
-  if (role !== "hotel_management" && role !== "system_admin") {
+  if (role !== "hotel_management") {
     return { error: "You do not have access to these settings." };
   }
 

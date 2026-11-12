@@ -11,10 +11,7 @@ async function LoginContent({ searchParams }: { searchParams: SearchParams }) {
   const raw = Array.isArray(params.next) ? params.next[0] : params.next;
   const next = safeNext(raw);
 
-  // A guest who came from a booking page goes back to it, marked as a guest
-  const guestHref = next?.startsWith("/book/")
-    ? `${next}${next.includes("?") ? "&" : "?"}guest=1`
-    : "/rooms";
+  const guestHref = next?.startsWith("/book/") ? next : "/rooms";
 
   const tab = Array.isArray(params.tab) ? params.tab[0] : params.tab;
   return (
